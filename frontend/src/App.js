@@ -3770,6 +3770,7 @@ const App = () => {
         </div>
       )}
     </div>
+    </GoogleOAuthProvider>
   );
 };
 
