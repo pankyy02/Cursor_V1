@@ -16,6 +16,7 @@ const App = () => {
     competitive: false,
     scenarios: false,
     trials: false,
+    search: false,
     export: false
   });
   const [analysis, setAnalysis] = useState(null);
