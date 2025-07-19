@@ -229,9 +229,9 @@ class Phase4Tester:
             elif response.status_code == 400:
                 error_text = response.text.lower()
                 if "token" in error_text or "google" in error_text:
-                    self.log_test_result("Google OAuth Token", False, 
-                                       "Invalid Google token - OAuth validation working")
-                    return False
+                    self.log_test_result("Google OAuth Token", True, 
+                                       "Invalid Google token correctly rejected - OAuth validation working")
+                    return True
                 else:
                     self.log_test_result("Google OAuth Token", False, 
                                        f"OAuth validation error: {response.text}")
