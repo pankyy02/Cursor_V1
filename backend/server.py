@@ -391,6 +391,431 @@ def create_scenario_comparison_chart(scenario_models, therapy_area="", product_n
     
     return json.dumps(fig, cls=PlotlyJSONEncoder)
 
+# Custom Templates System
+async def generate_custom_template(template_type: str, therapy_area: str, region: str, api_key: str) -> CustomTemplate:
+    """Generate custom templates for different use cases"""
+    try:
+        template_queries = {
+            "therapy_specific": f"""
+            Create a comprehensive therapy-specific analysis template for {therapy_area}:
+            
+            1. DISEASE OVERVIEW SECTION
+            - Pathophysiology specific to {therapy_area}
+            - Key biomarkers and diagnostic criteria
+            - Disease staging and classification systems
+            - Current standard of care protocols
+            
+            2. MARKET ANALYSIS FRAMEWORK  
+            - Market segmentation approach
+            - Key performance indicators (KPIs)
+            - Competitive analysis structure
+            - Pricing and reimbursement considerations
+            
+            3. CLINICAL DEVELOPMENT TEMPLATE
+            - Phase I/II/III study design considerations
+            - Relevant endpoints and biomarkers
+            - Regulatory pathway specifics
+            - Patient population definitions
+            
+            4. FORECASTING METHODOLOGY
+            - Patient flow modeling approach
+            - Market penetration assumptions
+            - Scenario planning framework
+            - Risk assessment criteria
+            
+            Provide structured template with customizable sections.
+            """,
+            
+            "regulatory": f"""
+            Create regulatory analysis template for {therapy_area} in {region}:
+            
+            1. REGULATORY PATHWAY ANALYSIS
+            - Applicable regulatory guidelines
+            - Submission requirements and timelines
+            - Key regulatory precedents
+            - Orphan drug/breakthrough therapy considerations
+            
+            2. CLINICAL TRIAL DESIGN REQUIREMENTS
+            - Endpoint requirements by region
+            - Patient population specifications
+            - Comparator selection criteria
+            - Post-market surveillance requirements
+            
+            3. MARKET ACCESS FRAMEWORK
+            - HTA requirements by country
+            - Pricing and reimbursement pathways
+            - Evidence generation requirements
+            - Real-world evidence considerations
+            
+            4. RISK MITIGATION STRATEGIES
+            - Regulatory risk assessment
+            - Contingency planning
+            - Communication strategies
+            - Timeline optimization
+            
+            Focus on {region}-specific requirements and best practices.
+            """,
+            
+            "kol_interview": f"""
+            Create KOL interview template for {therapy_area} research:
+            
+            1. BACKGROUND QUESTIONS
+            - Experience with {therapy_area}
+            - Current practice patterns
+            - Patient population characteristics
+            - Treatment decision factors
+            
+            2. CLINICAL PERSPECTIVES
+            - Unmet medical needs assessment
+            - Current therapy limitations
+            - Ideal product profile definition
+            - Clinical endpoint preferences
+            
+            3. MARKET INSIGHTS
+            - Adoption barriers and drivers
+            - Competitive positioning views
+            - Pricing sensitivity analysis
+            - Future treatment landscape
+            
+            4. PRODUCT-SPECIFIC QUESTIONS
+            - Differentiation factors
+            - Target patient populations
+            - Expected market share
+            - Implementation considerations
+            
+            Include follow-up questions and probing techniques.
+            """
+        }
+        
+        # Get template content using AI
+        query = template_queries.get(template_type, f"Create analysis template for {therapy_area}")
+        result = await search_with_perplexity(query, api_key, f"{template_type}_template")
+        
+        # Parse template into structured sections
+        sections = parse_template_sections(result.content, template_type)
+        
+        # Create customization options
+        customization_options = generate_customization_options(template_type, therapy_area, region)
+        
+        return CustomTemplate(
+            template_type=template_type,
+            therapy_area=therapy_area,
+            region=region,
+            template_data={
+                "content": result.content,
+                "generated_by": "ai_perplexity",
+                "sources": result.citations,
+                "word_count": len(result.content.split()),
+                "sections_count": len(sections)
+            },
+            sections=sections,
+            customization_options=customization_options
+        )
+        
+    except Exception as e:
+        logging.error(f"Template generation error: {str(e)}")
+        return CustomTemplate(
+            template_type=template_type,
+            therapy_area=therapy_area or "Unknown",
+            region=region or "Global",
+            template_data={"error": str(e)},
+            sections=[{"title": "Error", "content": str(e), "type": "error"}],
+            customization_options={"error": str(e)}
+        )
+
+def parse_template_sections(content: str, template_type: str) -> List[Dict[str, Any]]:
+    """Parse template content into structured sections"""
+    try:
+        sections = []
+        lines = content.split('\n')
+        current_section = None
+        current_content = []
+        
+        section_markers = ['##', '1.', '2.', '3.', '4.', '5.', 'I.', 'II.', 'III.', 'IV.', 'V.']
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Check if this is a section header
+            is_header = any(line.startswith(marker) for marker in section_markers)
+            is_header = is_header or (line.isupper() and len(line.split()) <= 5)
+            
+            if is_header:
+                # Save previous section
+                if current_section:
+                    sections.append({
+                        "title": current_section,
+                        "content": '\n'.join(current_content),
+                        "type": determine_section_type(current_section, template_type),
+                        "customizable": True,
+                        "required": determine_section_importance(current_section)
+                    })
+                
+                # Start new section
+                current_section = line.replace('#', '').replace('1.', '').replace('2.', '').replace('3.', '').replace('4.', '').replace('5.', '').strip()
+                current_content = []
+            else:
+                current_content.append(line)
+        
+        # Add last section
+        if current_section:
+            sections.append({
+                "title": current_section,
+                "content": '\n'.join(current_content),
+                "type": determine_section_type(current_section, template_type),
+                "customizable": True,
+                "required": determine_section_importance(current_section)
+            })
+        
+        return sections
+        
+    except Exception as e:
+        return [{
+            "title": "Template Parsing Error",
+            "content": f"Error parsing template: {str(e)}",
+            "type": "error",
+            "customizable": False,
+            "required": True
+        }]
+
+def determine_section_type(section_title: str, template_type: str) -> str:
+    """Determine section type based on title and template type"""
+    title_lower = section_title.lower()
+    
+    if 'clinical' in title_lower or 'trial' in title_lower:
+        return 'clinical'
+    elif 'market' in title_lower or 'competitive' in title_lower:
+        return 'market'
+    elif 'regulatory' in title_lower or 'approval' in title_lower:
+        return 'regulatory'
+    elif 'financial' in title_lower or 'forecast' in title_lower:
+        return 'financial'
+    elif 'risk' in title_lower:
+        return 'risk'
+    else:
+        return 'general'
+
+def determine_section_importance(section_title: str) -> bool:
+    """Determine if section is required or optional"""
+    important_keywords = ['overview', 'analysis', 'framework', 'requirements', 'key', 'main']
+    return any(keyword in section_title.lower() for keyword in important_keywords)
+
+def generate_customization_options(template_type: str, therapy_area: str, region: str) -> Dict[str, Any]:
+    """Generate customization options for templates"""
+    try:
+        base_options = {
+            "editable_sections": True,
+            "section_reordering": True,
+            "custom_fields": True,
+            "export_formats": ["pdf", "word", "powerpoint"],
+            "collaboration": True
+        }
+        
+        if template_type == "therapy_specific":
+            base_options.update({
+                "biomarker_customization": True,
+                "treatment_pathway_editing": True,
+                "kpi_selection": True,
+                "competitor_focus": True
+            })
+        elif template_type == "regulatory":
+            base_options.update({
+                "region_specific_requirements": True,
+                "timeline_customization": True,
+                "endpoint_selection": True,
+                "risk_weighting": True
+            })
+        elif template_type == "kol_interview":
+            base_options.update({
+                "question_branching": True,
+                "interview_flow_editing": True,
+                "specialty_focus": True,
+                "follow_up_automation": True
+            })
+        
+        return base_options
+        
+    except Exception as e:
+        return {"error": f"Customization options generation failed: {str(e)}"}
+
+# Advanced 2D Visualizations
+def create_competitive_positioning_map(competitive_data: Dict[str, Any]) -> str:
+    """Create 2D competitive positioning bubble chart"""
+    try:
+        competitors = competitive_data.get("competitors", [])
+        if not competitors or len(competitors) < 2:
+            return json.dumps({"error": "Insufficient competitive data"})
+        
+        # Extract positioning dimensions (simplified approach)
+        x_values = []  # Market share or efficacy
+        y_values = []  # Safety or innovation
+        sizes = []    # Revenue or market size
+        names = []
+        
+        for i, comp in enumerate(competitors[:10]):  # Limit to 10 competitors
+            # Use market share for x-axis (with some randomization for demo)
+            market_share = comp.get("market_share", 10 + i * 5)
+            if isinstance(market_share, str):
+                market_share = float(market_share.replace('%', '')) if '%' in market_share else 10
+            x_values.append(market_share)
+            
+            # Use a derived metric for y-axis (innovation/safety score)
+            innovation_score = 50 + (i * 10) % 40  # Simulated score 50-90
+            y_values.append(innovation_score)
+            
+            # Size based on estimated revenue
+            estimated_revenue = market_share * 20  # Simplified revenue estimation
+            sizes.append(max(10, estimated_revenue))
+            
+            names.append(comp.get("name", f"Competitor {i+1}"))
+        
+        fig = go.Figure(data=go.Scatter(
+            x=x_values,
+            y=y_values,
+            mode='markers+text',
+            marker=dict(
+                size=sizes,
+                sizemode='diameter',
+                sizeref=2. * max(sizes) / (40.**2),
+                sizemin=4,
+                color=x_values,
+                colorscale='Viridis',
+                showscale=True,
+                colorbar=dict(title="Market Share (%)")
+            ),
+            text=names,
+            textposition="top center",
+            hovertemplate="<b>%{text}</b><br>" +
+                         "Market Share: %{x}%<br>" +
+                         "Innovation Score: %{y}<br>" +
+                         "<extra></extra>"
+        ))
+        
+        fig.update_layout(
+            title="Competitive Positioning Map",
+            xaxis_title="Market Share (%)",
+            yaxis_title="Innovation/Safety Score",
+            height=500,
+            showlegend=False
+        )
+        
+        return json.dumps(fig, cls=PlotlyJSONEncoder)
+        
+    except Exception as e:
+        return json.dumps({"error": f"Positioning map creation failed: {str(e)}"})
+
+def create_market_evolution_heatmap(therapy_area: str, time_periods: List[str] = None) -> str:
+    """Create market evolution heatmap"""
+    try:
+        if not time_periods:
+            time_periods = ["2020", "2021", "2022", "2023", "2024"]
+        
+        # Simulated market segments and their evolution
+        segments = ["Newly Diagnosed", "Relapsed/Refractory", "Maintenance", "Palliative", "Prevention"]
+        
+        # Generate realistic market size data (in millions)
+        np.random.seed(42)
+        market_data = []
+        for segment in segments:
+            segment_data = []
+            base_size = np.random.uniform(100, 1000)  # Base market size
+            for i, period in enumerate(time_periods):
+                # Add growth over time with some variability
+                growth_factor = 1 + (i * 0.15) + np.random.uniform(-0.1, 0.1)
+                market_size = base_size * growth_factor
+                segment_data.append(market_size)
+            market_data.append(segment_data)
+        
+        fig = go.Figure(data=go.Heatmap(
+            z=market_data,
+            x=time_periods,
+            y=segments,
+            colorscale='Blues',
+            hovertemplate="<b>%{y}</b><br>" +
+                         "Year: %{x}<br>" +
+                         "Market Size: $%{z:.0f}M<br>" +
+                         "<extra></extra>"
+        ))
+        
+        fig.update_layout(
+            title=f"Market Evolution Heatmap - {therapy_area}",
+            xaxis_title="Year",
+            yaxis_title="Market Segments",
+            height=400
+        )
+        
+        return json.dumps(fig, cls=PlotlyJSONEncoder)
+        
+    except Exception as e:
+        return json.dumps({"error": f"Heatmap creation failed: {str(e)}"})
+
+def create_risk_return_scatter(financial_data: Dict[str, Any]) -> str:
+    """Create risk-return scatter plot for scenario analysis"""
+    try:
+        scenarios = financial_data.get("scenarios", {})
+        if not scenarios:
+            return json.dumps({"error": "No scenario data available"})
+        
+        x_values = []  # Risk (standard deviation)
+        y_values = []  # Return (expected NPV)
+        names = []
+        colors = []
+        
+        for scenario_name, scenario_data in scenarios.items():
+            if isinstance(scenario_data, dict):
+                # Extract risk and return metrics
+                projections = scenario_data.get("projections", [])
+                if projections:
+                    expected_return = np.mean(projections)
+                    risk = np.std(projections)
+                    
+                    x_values.append(risk)
+                    y_values.append(expected_return)
+                    names.append(scenario_name.title())
+                    
+                    # Color coding
+                    if 'optimistic' in scenario_name.lower():
+                        colors.append('green')
+                    elif 'pessimistic' in scenario_name.lower():
+                        colors.append('red')
+                    else:
+                        colors.append('blue')
+        
+        if not x_values:
+            return json.dumps({"error": "No valid scenario data for risk-return analysis"})
+        
+        fig = go.Figure(data=go.Scatter(
+            x=x_values,
+            y=y_values,
+            mode='markers+text',
+            marker=dict(
+                size=15,
+                color=colors,
+                opacity=0.7
+            ),
+            text=names,
+            textposition="top center",
+            hovertemplate="<b>%{text}</b><br>" +
+                         "Risk (StdDev): %{x:.1f}<br>" +
+                         "Expected Return: $%{y:.0f}M<br>" +
+                         "<extra></extra>"
+        ))
+        
+        fig.update_layout(
+            title="Risk-Return Analysis by Scenario",
+            xaxis_title="Risk (Standard Deviation)",
+            yaxis_title="Expected Return ($M)",
+            height=400,
+            showlegend=False
+        )
+        
+        return json.dumps(fig, cls=PlotlyJSONEncoder)
+        
+    except Exception as e:
+        return json.dumps({"error": f"Risk-return scatter creation failed: {str(e)}"})
+
 # Interactive Timeline Functions
 async def generate_timeline(therapy_area: str, product_name: str, analysis_id: str, 
                           include_competitive: bool, api_key: str) -> Timeline:
