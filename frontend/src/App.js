@@ -1051,6 +1051,65 @@ const App = () => {
                 )}
               </div>
 
+              {/* Phase 3: Real-World Evidence Integration Buttons */}
+              {analysis && (
+                <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <h4 className="text-sm font-semibold text-green-900 mb-2">🔬 Phase 3: Real-World Evidence</h4>
+                  
+                  <div className="space-y-2">
+                    <button
+                      onClick={handleRealWorldEvidence}
+                      disabled={loadingStates.rwe}
+                      className={`w-full px-3 py-2 text-xs rounded font-medium transition-colors ${
+                        loadingStates.rwe
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-green-600 hover:bg-green-700 text-white'
+                      }`}
+                    >
+                      {loadingStates.rwe ? 'Analyzing RWE...' : '📊 Generate Real-World Evidence'}
+                    </button>
+                    
+                    <button
+                      onClick={handleMarketAccessIntelligence}
+                      disabled={loadingStates.market_access}
+                      className={`w-full px-3 py-2 text-xs rounded font-medium transition-colors ${
+                        loadingStates.market_access
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-teal-600 hover:bg-teal-700 text-white'
+                      }`}
+                    >
+                      {loadingStates.market_access ? 'Analyzing Market Access...' : '🏥 Market Access Intelligence'}
+                    </button>
+                    
+                    <button
+                      onClick={handlePredictiveAnalytics}
+                      disabled={loadingStates.predictive}
+                      className={`w-full px-3 py-2 text-xs rounded font-medium transition-colors ${
+                        loadingStates.predictive
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      }`}
+                    >
+                      {loadingStates.predictive ? 'Running Predictive Models...' : '🔮 Predictive Analytics'}
+                    </button>
+                    
+                    <button
+                      onClick={handlePhase3Dashboard}
+                      disabled={loadingStates.dashboard}
+                      className={`w-full px-3 py-2 text-xs rounded font-medium transition-colors ${
+                        loadingStates.dashboard
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white'
+                      }`}
+                    >
+                      {loadingStates.dashboard ? 'Loading Dashboard...' : '📈 Phase 3 Dashboard'}
+                    </button>
+                  </div>
+                  
+                  <p className="text-xs text-green-600 mt-2">Advanced RWE analysis, market access intelligence & ML-enhanced forecasting</p>
+                </div>
+              )}
+
               {/* Export Options */}
               {analysis && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
