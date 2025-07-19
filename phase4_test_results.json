@@ -1,14 +1,14 @@
 {
   "total_tests": 9,
-  "passed": 6,
-  "failed": 3,
-  "success_rate": 66.66666666666666,
+  "passed": 8,
+  "failed": 1,
+  "success_rate": 88.88888888888889,
   "results": {
     "User Registration": true,
     "User Login": true,
     "User Profile": true,
-    "Google OAuth Token": false,
-    "Apple OAuth Token": false,
+    "Google OAuth Token": true,
+    "Apple OAuth Token": true,
     "Subscription Plans": true,
     "Stripe Checkout Session": true,
     "Session Management": false,
@@ -18,47 +18,47 @@
     "User Registration": {
       "success": true,
       "details": "Email already registered - registration validation working",
-      "timestamp": "2025-07-19T19:02:06.401666"
+      "timestamp": "2025-07-19T19:03:08.848917"
     },
     "User Login": {
       "success": true,
-      "details": "Login successful. Token: aNdesTldOGkPKoQj..., User: John Doe, Subscription: free",
-      "timestamp": "2025-07-19T19:02:06.415638"
+      "details": "Login successful. Token: D1J7zT2zeUhdVU88..., User: John Doe, Subscription: free",
+      "timestamp": "2025-07-19T19:03:08.864876"
     },
     "User Profile": {
       "success": true,
       "details": "Profile retrieved successfully. User ID: True, Email: True, Profile linked: True",
-      "timestamp": "2025-07-19T19:02:06.429694"
+      "timestamp": "2025-07-19T19:03:08.918260"
     },
     "Google OAuth Token": {
-      "success": false,
-      "details": "Invalid Google token - OAuth validation working",
-      "timestamp": "2025-07-19T19:02:06.591174"
+      "success": true,
+      "details": "Invalid Google token correctly rejected - OAuth validation working",
+      "timestamp": "2025-07-19T19:03:09.077942"
     },
     "Apple OAuth Token": {
-      "success": false,
-      "details": "Invalid Apple ID token - OAuth validation working",
-      "timestamp": "2025-07-19T19:02:06.597521"
+      "success": true,
+      "details": "Invalid Apple ID token correctly rejected - OAuth validation working",
+      "timestamp": "2025-07-19T19:03:09.084889"
     },
     "Subscription Plans": {
       "success": true,
       "details": "Found 3 subscription plans. Tiers: ['basic', 'professional', 'enterprise'], Price range: $29.0-$299.0, Valid pricing: True",
-      "timestamp": "2025-07-19T19:02:06.604058"
+      "timestamp": "2025-07-19T19:03:09.095772"
     },
     "Stripe Checkout Session": {
       "success": true,
-      "details": "Checkout session created. Session ID: cs_test_a1sagwOW..., Valid URL: True, URL length: 359",
-      "timestamp": "2025-07-19T19:02:07.229726"
+      "details": "Checkout session created. Session ID: cs_test_a1VEOHHe..., Valid URL: True, URL length: 359",
+      "timestamp": "2025-07-19T19:03:09.732436"
     },
     "Session Management": {
       "success": false,
-      "details": "Invalid token rejected: True, Malformed token rejected: False, No token rejected: False",
-      "timestamp": "2025-07-19T19:02:07.290274"
+      "details": "Invalid token rejected: True, Malformed token rejected: False, No token rejected: False, Empty token rejected: False",
+      "timestamp": "2025-07-19T19:03:09.805005"
     },
     "User Logout": {
       "success": true,
       "details": "Logout successful: Logged out successfully",
-      "timestamp": "2025-07-19T19:02:07.300306"
+      "timestamp": "2025-07-19T19:03:09.858206"
     }
   }
 }
