@@ -1,8 +1,8 @@
 {
-  "total_tests": 11,
-  "passed": 7,
-  "failed": 4,
-  "success_rate": 63.63636363636363,
+  "total_tests": 16,
+  "passed": 9,
+  "failed": 7,
+  "success_rate": 56.25,
   "results": {
     "API Health Check": true,
     "Database Connection": true,
@@ -14,75 +14,110 @@
     "Clinical Trials Search": true,
     "Export Functionality": true,
     "Data Persistence": false,
-    "Visualization Data": true
+    "Visualization Data": true,
+    "Perplexity Search Endpoint": true,
+    "Perplexity Pharmaceutical Search": false,
+    "Enhanced Competitive Analysis": false,
+    "Perplexity Error Handling": false,
+    "Perplexity Data Storage": true
   },
   "test_details": {
     "API Health Check": {
       "success": true,
       "details": "API responding: Pharma Forecasting Consultant API v2.0",
-      "timestamp": "2025-07-19T15:17:57.035607",
+      "timestamp": "2025-07-19T16:32:30.154522",
       "response_data": null
     },
     "Database Connection": {
       "success": true,
       "details": "MongoDB connection working, CRUD operations successful",
-      "timestamp": "2025-07-19T15:17:57.117016",
+      "timestamp": "2025-07-19T16:32:30.218150",
       "response_data": null
     },
     "Existing Data Retrieval": {
       "success": true,
-      "details": "Found 4 existing analyses, Using ID: aa29aa7d... (Lumber disc herniation)",
-      "timestamp": "2025-07-19T15:17:57.132233",
+      "details": "Found 5 existing analyses, Using ID: bfba7feb... (GIST)",
+      "timestamp": "2025-07-19T16:32:30.239783",
       "response_data": null
     },
     "Therapy Analysis": {
       "success": false,
       "details": "API key authentication required - endpoint structure validated",
-      "timestamp": "2025-07-19T15:17:57.296462",
+      "timestamp": "2025-07-19T16:32:32.525224",
       "response_data": null
     },
     "Funnel Generation": {
       "success": false,
       "details": "HTTP 500: {\"detail\":\"Funnel generation failed: Failed to generate chat completion: litellm.AuthenticationError: AnthropicException - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"authentication_error\\\",\\\"message\\\":\\\"invalid x-api-key\\\"}}\"}",
-      "timestamp": "2025-07-19T15:17:57.534856",
+      "timestamp": "2025-07-19T16:32:32.715235",
       "response_data": null
     },
     "Competitive Analysis": {
       "success": false,
       "details": "Found 1 competitors, 0 real pharma companies, Market dynamics: True, Pipeline: True, Clinical trials: 0",
-      "timestamp": "2025-07-19T15:17:58.329955",
+      "timestamp": "2025-07-19T16:32:33.085962",
       "response_data": null
     },
     "Scenario Modeling": {
       "success": true,
       "details": "3 scenarios generated, Peak revenues: Opt=540M, Real=900M, Pess=1620M, Logical ordering: False, Visualization: True",
-      "timestamp": "2025-07-19T15:17:58.713735",
+      "timestamp": "2025-07-19T16:32:33.512840",
       "response_data": null
     },
     "Clinical Trials Search": {
       "success": true,
       "details": "Found 0 clinical trials",
-      "timestamp": "2025-07-19T15:17:58.895750",
+      "timestamp": "2025-07-19T16:32:33.699211",
       "response_data": null
     },
     "Export Functionality": {
       "success": true,
       "details": "PDF: True, Excel: True",
-      "timestamp": "2025-07-19T15:17:58.945076",
+      "timestamp": "2025-07-19T16:32:33.751072",
       "response_data": null
     },
     "Data Persistence": {
       "success": false,
       "details": "Therapy area mismatch",
-      "timestamp": "2025-07-19T15:17:58.956890",
+      "timestamp": "2025-07-19T16:32:33.764392",
       "response_data": null
     },
     "Visualization Data": {
       "success": true,
       "details": "Generated charts: funnel, scenario, market",
-      "timestamp": "2025-07-19T15:17:58.966350",
+      "timestamp": "2025-07-19T16:32:33.776769",
+      "response_data": null
+    },
+    "Perplexity Search Endpoint": {
+      "success": true,
+      "details": "Search successful. Content length: 68, Citations: 0, Relevance score: 0/5",
+      "timestamp": "2025-07-19T16:32:33.965421",
+      "response_data": null
+    },
+    "Perplexity Pharmaceutical Search": {
+      "success": false,
+      "details": "Pharmaceutical terms found: 0/5, Valid citations: 0/0, Content quality: Basic",
+      "timestamp": "2025-07-19T16:32:34.182132",
+      "response_data": null
+    },
+    "Enhanced Competitive Analysis": {
+      "success": false,
+      "details": "Real-time intel: True, Enhanced analysis: True, Sources: 0, Analysis type: Error",
+      "timestamp": "2025-07-19T16:32:34.506349",
+      "response_data": null
+    },
+    "Perplexity Error Handling": {
+      "success": false,
+      "details": "Expected 500 error, got 200",
+      "timestamp": "2025-07-19T16:32:34.629274",
+      "response_data": null
+    },
+    "Perplexity Data Storage": {
+      "success": true,
+      "details": "Storage fields present: True, Valid timestamp: True, Query: 'Test query for database storag...'",
+      "timestamp": "2025-07-19T16:32:34.753728",
       "response_data": null
     }
   },
-  "analysis_id": "aa29aa7d-f7f6-4dd4-a522-8104c987ec9a"
+  "analysis_id": "bfba7feb-0d16-4ee2-a14a-9877bff01386"
 }
