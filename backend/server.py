@@ -369,18 +369,15 @@ async def identify_parent_company(product_name: str, perplexity_key: str) -> Dic
             "sources": []
         }
 
-async def scrape_investor_relations(company_website: str, company_name: str) -> Dict[str, Any]:
-    """Scrape investor relations data from company website"""
+async def scrape_investor_relations(company_name: str, company_website: str, perplexity_key: str) -> Dict[str, Any]:
+    """Get investor relations data using Perplexity search - no direct scraping"""
     try:
-        import requests
-        from bs4 import BeautifulSoup
-        import re
-        from urllib.parse import urljoin, urlparse
-        
-        # Common investor relations URL patterns
-        ir_paths = [
-            "/investors", "/investor-relations", "/ir", "/investors/", 
-            "/investor", "/en/investors", "/company/investors"
+        # Use Perplexity to gather comprehensive investor intelligence
+        queries = [
+            f"{company_name} latest financial results revenue earnings quarterly results 2024 2025",
+            f"{company_name} investor presentation slides recent earnings call financial highlights",
+            f"{company_name} press releases recent news corporate developments partnerships",
+            f"{company_name} market capitalization stock performance financial metrics pipeline"
         ]
         
         scraped_data = {
@@ -389,77 +386,79 @@ async def scrape_investor_relations(company_website: str, company_name: str) -> 
             "pipeline_updates": [],
             "press_releases": [],
             "presentation_links": [],
-            "sources_accessed": []
+            "sources_accessed": [],
+            "error_log": []
         }
         
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-        
-        base_url = company_website if company_website.startswith('http') else f"https://{company_website}"
-        
-        for ir_path in ir_paths:
+        for i, query in enumerate(queries):
             try:
-                ir_url = urljoin(base_url, ir_path)
-                response = requests.get(ir_url, headers=headers, timeout=15)
+                result = await search_with_perplexity(query, perplexity_key, f"investor_relations_{i+1}")
                 
-                if response.status_code == 200:
-                    soup = BeautifulSoup(response.content, 'html.parser')
-                    
-                    # Extract press releases
-                    press_links = soup.find_all('a', href=True)
-                    for link in press_links[:10]:  # Limit to 10
-                        href = link.get('href', '')
-                        text = link.get_text(strip=True)
-                        if any(keyword in text.lower() for keyword in ['press', 'release', 'news', 'announcement']):
-                            if text and len(text) > 10:
-                                scraped_data["press_releases"].append({
-                                    "title": text[:150],
-                                    "url": urljoin(ir_url, href),
-                                    "type": "press_release"
-                                })
-                    
-                    # Extract presentation links
-                    for link in press_links:
-                        href = link.get('href', '')
-                        text = link.get_text(strip=True)
-                        if any(keyword in text.lower() for keyword in ['presentation', 'slides', 'investor', 'earnings']):
-                            if href.endswith(('.pdf', '.ppt', '.pptx')) or 'presentation' in href.lower():
-                                scraped_data["presentation_links"].append({
-                                    "title": text[:100],
-                                    "url": urljoin(ir_url, href),
-                                    "type": "presentation"
-                                })
-                    
-                    # Extract financial highlights from page text
-                    page_text = soup.get_text()
-                    
-                    # Look for financial metrics
-                    financial_patterns = [
-                        r'\$([0-9.,]+)\s*(million|billion|M|B)\s*revenue',
-                        r'revenue.*?\$([0-9.,]+)\s*(million|billion|M|B)',
-                        r'sales.*?\$([0-9.,]+)\s*(million|billion|M|B)',
-                        r'market cap.*?\$([0-9.,]+)\s*(million|billion|M|B)'
-                    ]
-                    
-                    for pattern in financial_patterns:
-                        matches = re.findall(pattern, page_text, re.IGNORECASE)
-                        for match in matches[:3]:  # Limit results
-                            scraped_data["financial_highlights"].append({
-                                "metric": f"${match[0]} {match[1]}",
-                                "source": "investor_relations_page"
+                # Extract financial metrics from content
+                content = result.content
+                scraped_data["sources_accessed"].extend(result.citations)
+                
+                # Parse financial information
+                import re
+                
+                # Extract revenue/sales figures
+                financial_patterns = [
+                    r'\$([0-9.,]+)\s*(million|billion|M|B).*(?:revenue|sales|earnings)',
+                    r'(?:revenue|sales|earnings).*?\$([0-9.,]+)\s*(million|billion|M|B)',
+                    r'(?:quarterly|annual).*?\$([0-9.,]+)\s*(million|billion|M|B)'
+                ]
+                
+                for pattern in financial_patterns:
+                    matches = re.findall(pattern, content, re.IGNORECASE)
+                    for match in matches[:3]:  # Limit results
+                        scraped_data["financial_highlights"].append({
+                            "metric": f"${match[0]} {match[1]}",
+                            "source": f"perplexity_search_query_{i+1}",
+                            "context": "revenue_sales_data",
+                            "query_type": f"financial_search_{i+1}"
+                        })
+                
+                # Extract press release information
+                if "press release" in query.lower() or "news" in query.lower():
+                    press_lines = content.split('\n')[:10]
+                    for line in press_lines:
+                        if len(line.strip()) > 20 and any(keyword in line.lower() for keyword in ['announced', 'reports', 'partnership', 'approval', 'results']):
+                            scraped_data["press_releases"].append({
+                                "title": line.strip()[:150],
+                                "source": "perplexity_intelligence",
+                                "type": "press_release_mention",
+                                "query_context": query[:50] + "..."
                             })
+                
+                # Extract pipeline/development info
+                if "pipeline" in query.lower() or "development" in query.lower():
+                    pipeline_keywords = ['phase', 'trial', 'study', 'development', 'pipeline', 'candidate']
+                    pipeline_lines = [line for line in content.split('\n') 
+                                    if any(keyword in line.lower() for keyword in pipeline_keywords)]
                     
-                    scraped_data["sources_accessed"].append(ir_url)
-                    break  # Found working IR page, stop trying others
-                    
-            except Exception as e:
-                continue  # Try next IR path
+                    for line in pipeline_lines[:5]:
+                        if len(line.strip()) > 15:
+                            scraped_data["pipeline_updates"].append({
+                                "update": line.strip()[:200],
+                                "source": "perplexity_pipeline_search",
+                                "extracted_from": f"query_{i+1}"
+                            })
+                
+            except Exception as query_error:
+                scraped_data["error_log"].append({
+                    "query": query[:50] + "...",
+                    "error": str(query_error),
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "error_type": "perplexity_query_error"
+                })
+                continue
+        
+        # Remove duplicates and clean data
+        scraped_data["sources_accessed"] = list(set(scraped_data["sources_accessed"]))
         
         return scraped_data
         
     except Exception as e:
-        logging.error(f"Investor relations scraping error: {str(e)}")
         return {
             "financial_highlights": [],
             "recent_earnings": [],
@@ -467,7 +466,11 @@ async def scrape_investor_relations(company_website: str, company_name: str) -> 
             "press_releases": [],
             "presentation_links": [],
             "sources_accessed": [],
-            "error": str(e)
+            "error_log": [{
+                "error": str(e),
+                "error_type": "investor_relations_search_failure",
+                "timestamp": datetime.utcnow().isoformat()
+            }]
         }
 
 async def find_competitive_products(drug_class: str, therapy_area: str, perplexity_key: str) -> List[Dict[str, Any]]:
