@@ -52,6 +52,17 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
+class PerplexityRequest(BaseModel):
+    query: str
+    api_key: str
+    search_focus: Optional[str] = "pharmaceutical"
+
+class PerplexityResult(BaseModel):
+    content: str
+    citations: List[str]
+    search_query: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
 class TherapyAreaRequest(BaseModel):
     therapy_area: str
     product_name: Optional[str] = None
