@@ -321,6 +321,123 @@ class PredictiveAnalytics(BaseModel):
     recommendations: List[str]
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+# Phase 4: User Management, Sessions & Payment Models
+class UserRegistration(BaseModel):
+    email: EmailStr
+    password: str
+    first_name: str
+    last_name: str
+    company: Optional[str] = None
+    role: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class User(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: EmailStr
+    first_name: str
+    last_name: str
+    company: Optional[str] = None
+    role: Optional[str] = None
+    subscription_tier: str = "free"  # free, basic, professional, enterprise
+    subscription_status: str = "active"  # active, inactive, cancelled, expired
+    api_usage: Dict[str, int] = Field(default_factory=dict)  # usage tracking
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_login: Optional[datetime] = None
+    is_active: bool = True
+
+class UserSession(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    session_token: str
+    expires_at: datetime
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_accessed: datetime = Field(default_factory=datetime.utcnow)
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+
+class PaymentTransaction(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None
+    session_id: str
+    stripe_session_id: str
+    amount: float
+    currency: str = "usd"
+    subscription_tier: Optional[str] = None
+    payment_status: str = "pending"  # pending, completed, failed, expired, cancelled
+    stripe_payment_status: str = "unpaid"
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    completed_at: Optional[datetime] = None
+
+class SubscriptionPlan(BaseModel):
+    id: str
+    name: str
+    price: float
+    currency: str = "usd"
+    stripe_price_id: Optional[str] = None
+    features: List[str]
+    api_limits: Dict[str, int]  # daily/monthly limits
+    description: str
+    is_active: bool = True
+
+class AutomatedWorkflow(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    name: str
+    description: Optional[str] = None
+    workflow_type: str  # "scheduled_analysis", "alert", "report_generation"
+    schedule: Dict[str, Any]  # cron-like schedule
+    parameters: Dict[str, Any]  # workflow specific parameters
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_run: Optional[datetime] = None
+    next_run: Optional[datetime] = None
+
+class WorkflowExecution(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    workflow_id: str
+    user_id: str
+    status: str  # "running", "completed", "failed"
+    started_at: datetime = Field(default_factory=datetime.utcnow)
+    completed_at: Optional[datetime] = None
+    results: Dict[str, Any] = Field(default_factory=dict)
+    error_message: Optional[str] = None
+
+class AlertRule(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    name: str
+    description: Optional[str] = None
+    rule_type: str  # "price_change", "competitor_activity", "regulatory_update"
+    conditions: Dict[str, Any]
+    notification_channels: List[str]  # ["email", "webhook"]
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_triggered: Optional[datetime] = None
+
+class AnalysisTemplate(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    name: str
+    description: Optional[str] = None
+    template_type: str  # "therapy_analysis", "market_access", "rwe"
+    parameters: Dict[str, Any]
+    is_public: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    used_count: int = 0
+
+class UserProfile(BaseModel):
+    user_id: str
+    preferences: Dict[str, Any] = Field(default_factory=dict)
+    notification_settings: Dict[str, bool] = Field(default_factory=dict)
+    api_keys: Dict[str, str] = Field(default_factory=dict)  # encrypted
+    dashboard_layout: Dict[str, Any] = Field(default_factory=dict)
+    recent_analyses: List[str] = Field(default_factory=list)
+    favorite_analyses: List[str] = Field(default_factory=list)
+
 # Utility functions for data visualization
 def create_funnel_chart(funnel_stages):
     """Create a funnel visualization chart"""
