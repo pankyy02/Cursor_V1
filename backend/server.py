@@ -52,6 +52,25 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
+class CompanyIntelRequest(BaseModel):
+    product_name: str
+    therapy_area: Optional[str] = None
+    api_key: str
+    include_competitors: bool = True
+
+class CompanyIntelligence(BaseModel):
+    product_name: str
+    parent_company: str
+    company_website: str
+    market_class: str
+    investor_data: Dict[str, Any]
+    press_releases: List[Dict[str, str]]
+    competitive_products: List[Dict[str, Any]]
+    financial_metrics: Dict[str, Any]
+    recent_developments: List[Dict[str, str]]
+    sources_scraped: List[str]
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
 class PerplexityRequest(BaseModel):
     query: str
     api_key: str
