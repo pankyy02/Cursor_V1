@@ -997,6 +997,67 @@ def generate_excel_export(analysis: dict, funnel: dict = None):
         logging.error(f"Excel generation error: {str(e)}")
         return None
 
+@api_router.post("/perplexity-search", response_model=PerplexityResult)
+async def perplexity_search_endpoint(request: PerplexityRequest):
+    """Real-time pharmaceutical intelligence search using Perplexity API"""
+    try:
+        result = await search_with_perplexity(
+            query=request.query,
+            api_key=request.api_key,
+            search_focus=request.search_focus
+        )
+        
+        # Store result in database for future reference
+        await db.perplexity_searches.insert_one({
+            "query": request.query,
+            "result": result.dict(),
+            "timestamp": datetime.utcnow(),
+            "search_focus": request.search_focus
+        })
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Perplexity search endpoint error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+@api_router.post("/enhanced-competitive-analysis")
+async def enhanced_competitive_intel(request: CompetitiveAnalysisRequest):
+    """Enhanced competitive analysis combining Perplexity real-time data with Claude insights"""
+    try:
+        analysis = await db.therapy_analyses.find_one({"id": request.analysis_id})
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+        
+        # For this enhanced version, we need both Perplexity and Claude API keys
+        # For now, using the same key - in production, you'd want separate keys
+        enhanced_data = await enhanced_competitive_analysis_with_perplexity(
+            therapy_area=request.therapy_area,
+            product_name=analysis.get('product_name', ''),
+            perplexity_key=request.api_key,  # Assuming same key for now
+            claude_key=request.api_key
+        )
+        
+        # Update analysis with enhanced competitive intelligence
+        await db.therapy_analyses.update_one(
+            {"id": request.analysis_id},
+            {"$set": {
+                "competitive_landscape": enhanced_data,
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        
+        return {
+            "status": "success",
+            "competitive_landscape": enhanced_data,
+            "updated_at": datetime.utcnow(),
+            "analysis_type": "Enhanced with Real-time Intelligence"
+        }
+        
+    except Exception as e:
+        logger.error(f"Enhanced competitive analysis error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Enhanced analysis failed: {str(e)}")
+
 # API Routes
 @api_router.get("/")
 async def root():
