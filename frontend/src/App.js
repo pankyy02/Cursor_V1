@@ -411,14 +411,14 @@ const App = () => {
               <div className="space-y-3">
                 <button
                   onClick={handleAnalyzeTherapy}
-                  disabled={isLoading}
+                  disabled={loadingStates.analysis}
                   className={`w-full px-4 py-3 rounded-md font-medium transition-colors ${
-                    isLoading 
+                    loadingStates.analysis
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-blue-600 hover:bg-blue-700 text-white'
                   }`}
                 >
-                  {isLoading ? 'Analyzing...' : '🔬 Comprehensive Analysis'}
+                  {loadingStates.analysis ? 'Analyzing...' : '🔬 Comprehensive Analysis'}
                 </button>
 
                 {analysis && (
