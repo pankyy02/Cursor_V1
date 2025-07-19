@@ -30,3 +30,4 @@ openpyxl
 matplotlib
 seaborn
 plotly
+requests
