@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 import axios from "axios";
 
+// Phase 4: OAuth Integration
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import AppleSignin from 'react-apple-signin-auth';
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
