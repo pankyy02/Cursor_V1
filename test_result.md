@@ -309,13 +309,15 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Real-World Evidence Analysis (/api/real-world-evidence)"
-    - "Market Access Intelligence (/api/market-access-intelligence)"
-    - "Predictive Analytics (/api/predictive-analytics)"
-    - "Phase 3 Dashboard (/api/phase3-dashboard)"
-    - "Phase 3 Data Retrieval Endpoints"
+    - "User Registration & Authentication (/api/auth/register, /api/auth/login, /api/auth/logout)"
+    - "Stripe Payment Integration (/api/payments/checkout/session, /api/payments/checkout/status)"
+    - "Subscription Plans (/api/subscriptions/plans)"
+    - "Automated Workflows (/api/workflows)"
+    - "Executive Dashboard (/api/dashboard/executive)"
+    - "User Profile Management (/api/auth/profile)"
+    - "Stripe Webhook Handling (/api/webhook/stripe)"
   stuck_tasks:
-    - "Core Analysis Endpoint"
+    - "Core Analysis Endpoint" 
     - "Funnel Generation"
     - "Competitive Intelligence"
   test_all: true
