@@ -37,3 +37,6 @@ webdriver-manager
 lxml
 PyPDF2
 pdfplumber
+numpy
+scipy
+pandas
