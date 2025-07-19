@@ -26,8 +26,9 @@ API_BASE_URL = f"{BACKEND_URL}/api"
 
 # Test configuration
 TEST_API_KEY = "sk-ant-api03-test-key-for-testing-purposes-only"  # Mock API key for testing
+TEST_PERPLEXITY_KEY = "pplx-test-key-for-testing"  # Test Perplexity API key
 TEST_THERAPY_AREA = "GIST (Gastrointestinal Stromal Tumors)"
-TEST_PRODUCT_NAME = "Imatinib"
+TEST_PRODUCT_NAME = "Qinlock"  # Updated to match review request
 
 class PharmaAPITester:
     def __init__(self):
