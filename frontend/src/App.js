@@ -887,6 +887,8 @@ const App = () => {
                         </button>
                       )}
 
+                      )}
+
                     <button
                       onClick={handleGenerateFunnel}
                       disabled={loadingStates.funnel}
@@ -898,6 +900,7 @@ const App = () => {
                     >
                       {loadingStates.funnel ? 'Generating...' : '📊 Generate Forecast Funnel'}
                     </button>
+                    </div>
 
                     <button
                       onClick={handleEnhancedCompetitive}
