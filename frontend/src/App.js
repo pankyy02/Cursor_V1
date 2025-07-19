@@ -780,11 +780,14 @@ const App = () => {
                         </div>
                       )}
 
-                      {/* Market Dynamics */}
+                      {/* Market Dynamics - Better parsing */}
                       <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                        <h4 className="text-lg font-semibold text-gray-900 mb-3">📊 Market Dynamics</h4>
-                        <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                          {competitiveData.market_dynamics || competitiveData.full_analysis}
+                        <h4 className="text-lg font-semibold text-gray-900 mb-3">📊 Market Dynamics & Trends</h4>
+                        <div className="text-gray-700 leading-relaxed">
+                          {typeof competitiveData.market_dynamics === 'string' 
+                            ? competitiveData.market_dynamics.replace(/```json|```/g, '').trim()
+                            : JSON.stringify(competitiveData.market_dynamics, null, 2)
+                          }
                         </div>
                       </div>
 
