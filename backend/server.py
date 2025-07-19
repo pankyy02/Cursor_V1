@@ -391,6 +391,538 @@ def create_scenario_comparison_chart(scenario_models, therapy_area="", product_n
     
     return json.dumps(fig, cls=PlotlyJSONEncoder)
 
+# Advanced Financial Modeling Functions
+import numpy as np
+from scipy import stats
+import pandas as pd
+
+def calculate_npv(cash_flows: List[float], discount_rate: float) -> Dict[str, Any]:
+    """Calculate Net Present Value with detailed analysis"""
+    try:
+        if not cash_flows or len(cash_flows) == 0:
+            return {"npv": 0, "error": "No cash flows provided"}
+        
+        years = list(range(len(cash_flows)))
+        discounted_flows = []
+        
+        for i, cash_flow in enumerate(cash_flows):
+            pv = cash_flow / ((1 + discount_rate) ** i)
+            discounted_flows.append(pv)
+        
+        npv = sum(discounted_flows)
+        
+        # Additional NPV metrics
+        cumulative_pv = np.cumsum(discounted_flows)
+        payback_period = None
+        
+        # Find payback period
+        for i, cum_pv in enumerate(cumulative_pv):
+            if cum_pv > 0:
+                payback_period = i
+                break
+        
+        return {
+            "npv": round(npv, 2),
+            "discount_rate": discount_rate,
+            "cash_flows": cash_flows,
+            "discounted_flows": [round(df, 2) for df in discounted_flows],
+            "cumulative_pv": [round(cpv, 2) for cpv in cumulative_pv],
+            "payback_period": payback_period,
+            "total_revenue": sum([cf for cf in cash_flows if cf > 0]),
+            "total_investment": abs(sum([cf for cf in cash_flows if cf < 0]))
+        }
+        
+    except Exception as e:
+        return {"npv": 0, "error": f"NPV calculation failed: {str(e)}"}
+
+def calculate_irr(cash_flows: List[float]) -> Dict[str, Any]:
+    """Calculate Internal Rate of Return using numerical methods"""
+    try:
+        if not cash_flows or len(cash_flows) < 2:
+            return {"irr": 0, "error": "Insufficient cash flows for IRR"}
+        
+        # Simple IRR calculation using numpy
+        def npv_at_rate(rate):
+            return sum([cf / ((1 + rate) ** i) for i, cf in enumerate(cash_flows)])
+        
+        # Binary search for IRR
+        low, high = -0.99, 5.0  # Search between -99% and 500%
+        tolerance = 1e-6
+        max_iterations = 1000
+        
+        for _ in range(max_iterations):
+            mid = (low + high) / 2
+            npv_mid = npv_at_rate(mid)
+            
+            if abs(npv_mid) < tolerance:
+                irr = mid
+                break
+            elif npv_mid > 0:
+                low = mid
+            else:
+                high = mid
+        else:
+            irr = None
+        
+        # IRR analysis
+        if irr is not None:
+            irr_percentage = irr * 100
+            
+            # IRR sensitivity
+            irr_plus_1 = npv_at_rate(irr + 0.01) if irr else 0
+            irr_minus_1 = npv_at_rate(irr - 0.01) if irr else 0
+            
+            return {
+                "irr": round(irr_percentage, 2),
+                "irr_decimal": round(irr, 4),
+                "npv_at_irr": round(npv_at_rate(irr), 2) if irr else 0,
+                "sensitivity_plus_1": round(irr_plus_1, 2),
+                "sensitivity_minus_1": round(irr_minus_1, 2),
+                "interpretation": "High return" if irr_percentage > 20 else "Moderate return" if irr_percentage > 12 else "Low return",
+                "cash_flows_count": len(cash_flows)
+            }
+        else:
+            return {
+                "irr": None,
+                "error": "IRR could not be calculated - no solution found",
+                "cash_flows_count": len(cash_flows)
+            }
+            
+    except Exception as e:
+        return {"irr": None, "error": f"IRR calculation failed: {str(e)}"}
+
+def run_monte_carlo_simulation(base_peak_sales: float, base_launch_year: int, 
+                             iterations: int = 1000) -> Dict[str, Any]:
+    """Run Monte Carlo simulation for peak sales and NPV distributions"""
+    try:
+        np.random.seed(42)  # For reproducible results
+        
+        results = {
+            "peak_sales": [],
+            "npv_values": [],
+            "launch_delays": [],
+            "market_penetrations": []
+        }
+        
+        for i in range(iterations):
+            # Random variables with realistic pharmaceutical distributions
+            
+            # Peak sales uncertainty (log-normal distribution)
+            peak_sales_factor = np.random.lognormal(0, 0.3)  # 30% volatility
+            simulated_peak_sales = base_peak_sales * peak_sales_factor
+            
+            # Launch delay (normal distribution, 0-3 years)
+            launch_delay = max(0, np.random.normal(0, 1))
+            
+            # Market penetration rate (beta distribution)
+            market_penetration = np.random.beta(2, 3)  # Skewed towards lower penetration
+            
+            # Generate cash flows for this iteration
+            years = 15
+            cash_flows = []
+            
+            # Initial R&D investment (negative)
+            cash_flows.append(-500)  # $500M upfront investment
+            
+            # Revenue ramp-up
+            for year in range(1, years):
+                if year <= launch_delay:
+                    cash_flows.append(-50)  # Continued investment
+                else:
+                    years_since_launch = year - launch_delay
+                    if years_since_launch <= 5:  # Ramp-up period
+                        revenue_factor = years_since_launch / 5
+                    elif years_since_launch <= 10:  # Peak period
+                        revenue_factor = 1.0
+                    else:  # Decline period (patent expiry)
+                        revenue_factor = max(0.1, 1.0 - (years_since_launch - 10) * 0.2)
+                    
+                    annual_revenue = simulated_peak_sales * revenue_factor * market_penetration
+                    # Subtract costs (assume 70% margin)
+                    net_cash_flow = annual_revenue * 0.7
+                    cash_flows.append(net_cash_flow)
+            
+            # Calculate NPV for this iteration
+            discount_rate = 0.12
+            npv = sum([cf / ((1 + discount_rate) ** i) for i, cf in enumerate(cash_flows)])
+            
+            # Store results
+            results["peak_sales"].append(simulated_peak_sales)
+            results["npv_values"].append(npv)
+            results["launch_delays"].append(launch_delay)
+            results["market_penetrations"].append(market_penetration * 100)
+        
+        # Calculate statistics
+        peak_sales_stats = {
+            "mean": np.mean(results["peak_sales"]),
+            "median": np.median(results["peak_sales"]),
+            "std": np.std(results["peak_sales"]),
+            "p10": np.percentile(results["peak_sales"], 10),
+            "p90": np.percentile(results["peak_sales"], 90),
+            "min": np.min(results["peak_sales"]),
+            "max": np.max(results["peak_sales"])
+        }
+        
+        npv_stats = {
+            "mean": np.mean(results["npv_values"]),
+            "median": np.median(results["npv_values"]),
+            "std": np.std(results["npv_values"]),
+            "p10": np.percentile(results["npv_values"], 10),
+            "p90": np.percentile(results["npv_values"], 90),
+            "positive_npv_probability": np.mean([npv > 0 for npv in results["npv_values"]]) * 100
+        }
+        
+        return {
+            "iterations": iterations,
+            "peak_sales_distribution": peak_sales_stats,
+            "npv_distribution": npv_stats,
+            "launch_delay_stats": {
+                "mean": np.mean(results["launch_delays"]),
+                "std": np.std(results["launch_delays"])
+            },
+            "market_penetration_stats": {
+                "mean": np.mean(results["market_penetrations"]),
+                "std": np.std(results["market_penetrations"])
+            },
+            "risk_metrics": {
+                "probability_of_success": npv_stats["positive_npv_probability"],
+                "downside_risk": npv_stats["p10"],
+                "upside_potential": npv_stats["p90"]
+            },
+            "simulation_data": results  # For visualization
+        }
+        
+    except Exception as e:
+        return {
+            "iterations": 0,
+            "error": f"Monte Carlo simulation failed: {str(e)}",
+            "peak_sales_distribution": {},
+            "npv_distribution": {},
+            "risk_metrics": {}
+        }
+
+def perform_sensitivity_analysis(base_params: Dict[str, float]) -> Dict[str, Any]:
+    """Perform sensitivity analysis on key parameters"""
+    try:
+        base_npv = base_params.get("base_npv", 1000)
+        
+        # Parameters to test
+        sensitivity_params = {
+            "peak_sales": {"base": 1000, "range": [-30, -20, -10, 0, 10, 20, 30]},
+            "discount_rate": {"base": 0.12, "range": [-2, -1, -0.5, 0, 0.5, 1, 2]},
+            "market_penetration": {"base": 0.25, "range": [-10, -5, -2.5, 0, 2.5, 5, 10]},
+            "launch_delay": {"base": 0, "range": [0, 0.5, 1, 1.5, 2, 2.5, 3]}
+        }
+        
+        sensitivity_results = {}
+        
+        for param_name, param_data in sensitivity_params.items():
+            base_value = param_data["base"]
+            param_results = []
+            
+            for change_pct in param_data["range"]:
+                if param_name == "launch_delay":
+                    new_value = base_value + change_pct
+                else:
+                    new_value = base_value * (1 + change_pct / 100)
+                
+                # Simplified NPV impact calculation
+                if param_name == "peak_sales":
+                    npv_impact = base_npv * (change_pct / 100) * 0.7  # Revenue impact
+                elif param_name == "discount_rate":
+                    npv_impact = base_npv * (-change_pct / 100) * 8  # Discount rate impact
+                elif param_name == "market_penetration":
+                    npv_impact = base_npv * (change_pct / 100) * 0.8
+                elif param_name == "launch_delay":
+                    npv_impact = base_npv * (-change_pct * 0.15)  # Each year delay
+                else:
+                    npv_impact = 0
+                
+                new_npv = base_npv + npv_impact
+                
+                param_results.append({
+                    "parameter_change": change_pct,
+                    "new_value": round(new_value, 4),
+                    "npv_change": round(npv_impact, 2),
+                    "new_npv": round(new_npv, 2),
+                    "sensitivity": round(npv_impact / (base_npv * (change_pct / 100)) if change_pct != 0 else 0, 2)
+                })
+            
+            sensitivity_results[param_name] = param_results
+        
+        # Tornado diagram data (sorted by impact)
+        tornado_data = []
+        for param_name, results in sensitivity_results.items():
+            if len(results) >= 2:
+                max_impact = max([abs(r["npv_change"]) for r in results])
+                tornado_data.append({
+                    "parameter": param_name,
+                    "max_impact": max_impact,
+                    "positive_impact": max([r["npv_change"] for r in results]),
+                    "negative_impact": min([r["npv_change"] for r in results])
+                })
+        
+        tornado_data.sort(key=lambda x: x["max_impact"], reverse=True)
+        
+        return {
+            "sensitivity_results": sensitivity_results,
+            "tornado_analysis": tornado_data,
+            "key_drivers": [item["parameter"] for item in tornado_data[:3]],
+            "analysis_type": "univariate_sensitivity"
+        }
+        
+    except Exception as e:
+        return {
+            "sensitivity_results": {},
+            "error": f"Sensitivity analysis failed: {str(e)}",
+            "tornado_analysis": [],
+            "key_drivers": []
+        }
+
+async def generate_financial_model(therapy_area: str, product_name: str, analysis_id: str, 
+                                 params: Dict[str, Any], api_key: str) -> FinancialModel:
+    """Generate comprehensive financial model"""
+    try:
+        # Extract parameters with defaults
+        discount_rate = params.get("discount_rate", 0.12)
+        peak_sales_estimate = params.get("peak_sales_estimate", 1000)
+        launch_year = params.get("launch_year", 2025)
+        patent_expiry_year = params.get("patent_expiry_year", 2035)
+        ramp_up_years = params.get("ramp_up_years", 5)
+        monte_carlo_iterations = params.get("monte_carlo_iterations", 1000)
+        
+        # Generate cash flow projections
+        years = patent_expiry_year - launch_year + 5  # Include post-patent period
+        cash_flows = []
+        
+        # Initial investment
+        cash_flows.append(-500)  # $500M R&D investment
+        
+        # Revenue projections
+        for year in range(1, years + 1):
+            if year <= ramp_up_years:
+                revenue_factor = year / ramp_up_years
+            elif year <= (patent_expiry_year - launch_year):
+                revenue_factor = 1.0
+            else:
+                # Post-patent decline
+                years_post_patent = year - (patent_expiry_year - launch_year)
+                revenue_factor = max(0.1, 1.0 - years_post_patent * 0.3)
+            
+            annual_revenue = peak_sales_estimate * revenue_factor
+            net_cash_flow = annual_revenue * 0.7  # 70% margin
+            cash_flows.append(net_cash_flow)
+        
+        # Perform financial analyses
+        npv_analysis = calculate_npv(cash_flows, discount_rate)
+        irr_analysis = calculate_irr(cash_flows)
+        monte_carlo_results = run_monte_carlo_simulation(
+            peak_sales_estimate, launch_year, monte_carlo_iterations
+        )
+        sensitivity_analysis = perform_sensitivity_analysis({
+            "base_npv": npv_analysis.get("npv", 1000)
+        })
+        
+        # Create financial projections
+        financial_projections = []
+        for i, cash_flow in enumerate(cash_flows):
+            year = launch_year + i - 1 if i > 0 else launch_year - 1
+            financial_projections.append({
+                "year": year,
+                "cash_flow": round(cash_flow, 2),
+                "cumulative_cash_flow": round(sum(cash_flows[:i+1]), 2),
+                "discounted_value": round(cash_flow / ((1 + discount_rate) ** i), 2)
+            })
+        
+        # Generate visualization data
+        visualization_data = {
+            "cash_flow_chart": create_cash_flow_chart(financial_projections),
+            "npv_sensitivity_chart": create_sensitivity_chart(sensitivity_analysis),
+            "monte_carlo_chart": create_monte_carlo_chart(monte_carlo_results)
+        }
+        
+        # Compile risk metrics
+        risk_metrics = {
+            "npv_risk": "High" if npv_analysis.get("npv", 0) < 500 else "Medium" if npv_analysis.get("npv", 0) < 1500 else "Low",
+            "irr_vs_hurdle": irr_analysis.get("irr", 0) - (discount_rate * 100),
+            "monte_carlo_success_rate": monte_carlo_results.get("risk_metrics", {}).get("probability_of_success", 50),
+            "key_risk_factors": sensitivity_analysis.get("key_drivers", []),
+            "payback_period": npv_analysis.get("payback_period", "Not calculated")
+        }
+        
+        # Store assumptions
+        assumptions = {
+            "discount_rate": discount_rate,
+            "peak_sales_estimate": peak_sales_estimate,
+            "launch_year": launch_year,
+            "patent_expiry_year": patent_expiry_year,
+            "ramp_up_years": ramp_up_years,
+            "profit_margin": 0.7,
+            "monte_carlo_iterations": monte_carlo_iterations,
+            "post_patent_decline_rate": 0.3
+        }
+        
+        return FinancialModel(
+            therapy_area=therapy_area,
+            product_name=product_name,
+            analysis_id=analysis_id,
+            npv_analysis=npv_analysis,
+            irr_analysis=irr_analysis,
+            monte_carlo_results=monte_carlo_results,
+            peak_sales_distribution=monte_carlo_results.get("peak_sales_distribution", {}),
+            sensitivity_analysis=sensitivity_analysis,
+            financial_projections=financial_projections,
+            risk_metrics=risk_metrics,
+            visualization_data=visualization_data,
+            assumptions=assumptions
+        )
+        
+    except Exception as e:
+        logging.error(f"Financial model generation error: {str(e)}")
+        return FinancialModel(
+            therapy_area=therapy_area,
+            product_name=product_name or "Unknown",
+            analysis_id=analysis_id,
+            npv_analysis={"error": str(e), "npv": 0},
+            irr_analysis={"error": str(e), "irr": 0},
+            monte_carlo_results={"error": str(e)},
+            peak_sales_distribution={"error": str(e)},
+            sensitivity_analysis={"error": str(e)},
+            financial_projections=[],
+            risk_metrics={"error": str(e)},
+            visualization_data={"error": str(e)},
+            assumptions={"error": str(e)}
+        )
+
+def create_cash_flow_chart(financial_projections: List[Dict]) -> str:
+    """Create cash flow visualization"""
+    try:
+        years = [proj["year"] for proj in financial_projections]
+        cash_flows = [proj["cash_flow"] for proj in financial_projections]
+        cumulative = [proj["cumulative_cash_flow"] for proj in financial_projections]
+        
+        fig = go.Figure()
+        
+        # Cash flows bar chart
+        fig.add_trace(go.Bar(
+            x=years,
+            y=cash_flows,
+            name="Annual Cash Flow",
+            marker_color=['red' if cf < 0 else 'green' for cf in cash_flows]
+        ))
+        
+        # Cumulative line
+        fig.add_trace(go.Scatter(
+            x=years,
+            y=cumulative,
+            mode='lines+markers',
+            name="Cumulative Cash Flow",
+            yaxis='y2',
+            line=dict(color='blue', width=3)
+        ))
+        
+        fig.update_layout(
+            title="Financial Projections - Cash Flow Analysis",
+            xaxis_title="Year",
+            yaxis_title="Annual Cash Flow ($M)",
+            yaxis2=dict(title="Cumulative Cash Flow ($M)", overlaying='y', side='right'),
+            hovermode='x unified',
+            height=400
+        )
+        
+        return json.dumps(fig, cls=PlotlyJSONEncoder)
+        
+    except Exception as e:
+        return json.dumps({"error": f"Chart creation failed: {str(e)}"})
+
+def create_sensitivity_chart(sensitivity_data: Dict) -> str:
+    """Create tornado chart for sensitivity analysis"""
+    try:
+        tornado_data = sensitivity_data.get("tornado_analysis", [])
+        
+        if not tornado_data:
+            return json.dumps({"error": "No sensitivity data available"})
+        
+        parameters = [item["parameter"] for item in tornado_data]
+        positive_impacts = [item["positive_impact"] for item in tornado_data]
+        negative_impacts = [item["negative_impact"] for item in tornado_data]
+        
+        fig = go.Figure()
+        
+        # Negative impacts (left side)
+        fig.add_trace(go.Bar(
+            y=parameters,
+            x=negative_impacts,
+            name="Negative Impact",
+            orientation='h',
+            marker_color='red',
+            opacity=0.7
+        ))
+        
+        # Positive impacts (right side)
+        fig.add_trace(go.Bar(
+            y=parameters,
+            x=positive_impacts,
+            name="Positive Impact", 
+            orientation='h',
+            marker_color='green',
+            opacity=0.7
+        ))
+        
+        fig.update_layout(
+            title="Sensitivity Analysis - Tornado Chart",
+            xaxis_title="NPV Impact ($M)",
+            yaxis_title="Parameters",
+            barmode='overlay',
+            height=400
+        )
+        
+        return json.dumps(fig, cls=PlotlyJSONEncoder)
+        
+    except Exception as e:
+        return json.dumps({"error": f"Sensitivity chart creation failed: {str(e)}"})
+
+def create_monte_carlo_chart(monte_carlo_data: Dict) -> str:
+    """Create Monte Carlo distribution charts"""
+    try:
+        simulation_data = monte_carlo_data.get("simulation_data", {})
+        npv_values = simulation_data.get("npv_values", [])
+        
+        if not npv_values:
+            return json.dumps({"error": "No Monte Carlo data available"})
+        
+        fig = go.Figure()
+        
+        # NPV distribution histogram
+        fig.add_trace(go.Histogram(
+            x=npv_values,
+            nbinsx=50,
+            name="NPV Distribution",
+            marker_color='blue',
+            opacity=0.7
+        ))
+        
+        # Add percentile lines
+        p10 = np.percentile(npv_values, 10)
+        p90 = np.percentile(npv_values, 90)
+        median = np.median(npv_values)
+        
+        fig.add_vline(x=p10, line_dash="dash", line_color="red", annotation_text="P10")
+        fig.add_vline(x=median, line_dash="solid", line_color="green", annotation_text="Median")
+        fig.add_vline(x=p90, line_dash="dash", line_color="red", annotation_text="P90")
+        
+        fig.update_layout(
+            title="Monte Carlo Simulation - NPV Distribution",
+            xaxis_title="NPV ($M)",
+            yaxis_title="Frequency",
+            height=400
+        )
+        
+        return json.dumps(fig, cls=PlotlyJSONEncoder)
+        
+    except Exception as e:
+        return json.dumps({"error": f"Monte Carlo chart creation failed: {str(e)}"})
+
 # Multi-Model AI Ensemble Functions
 async def analyze_with_claude(therapy_area: str, product_name: str, analysis_type: str, claude_key: str) -> Dict[str, Any]:
     """Comprehensive analysis using Claude"""
