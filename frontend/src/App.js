@@ -887,8 +887,6 @@ const App = () => {
                         </button>
                       )}
 
-                      )}
-
                     <button
                       onClick={handleGenerateFunnel}
                       disabled={loadingStates.funnel}
