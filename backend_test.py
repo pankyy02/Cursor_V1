@@ -1907,7 +1907,13 @@ class PharmaAPITester:
             ("Enhanced Competitive Analysis", self.test_enhanced_competitive_analysis),
             ("Perplexity Error Handling", self.test_perplexity_error_handling),
             ("Perplexity Data Storage", self.test_perplexity_data_storage),
-            # Company Intelligence Engine Tests (NEW)
+            # Phase 3: Real-World Evidence & Market Access Intelligence Tests (NEW)
+            ("Real-World Evidence Analysis", self.test_real_world_evidence_endpoint),
+            ("Market Access Intelligence", self.test_market_access_intelligence_endpoint),
+            ("Predictive Analytics", self.test_predictive_analytics_endpoint),
+            ("Phase 3 Dashboard", self.test_phase3_dashboard_endpoint),
+            ("Phase 3 Data Retrieval Endpoints", self.test_phase3_data_retrieval_endpoints),
+            # Company Intelligence Engine Tests
             ("Company Intelligence - Qinlock", self.test_company_intelligence_qinlock),
             ("Company Intelligence - Keytruda", self.test_company_intelligence_keytruda),
             ("Company Intelligence - Competitive Discovery", self.test_company_intelligence_competitive_discovery),
