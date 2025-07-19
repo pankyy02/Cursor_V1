@@ -4974,6 +4974,19 @@ async def get_predictive_analysis(therapy_area: str, product_name: str = None):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+def convert_objectid_to_str(obj):
+    """Convert MongoDB ObjectId to string for JSON serialization"""
+    if isinstance(obj, dict):
+        return {key: convert_objectid_to_str(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_objectid_to_str(item) for item in obj]
+    elif hasattr(obj, '__dict__'):
+        return convert_objectid_to_str(obj.__dict__)
+    elif str(type(obj)) == "<class 'bson.objectid.ObjectId'>":
+        return str(obj)
+    else:
+        return obj
+
 @api_router.get("/phase3-dashboard")
 async def get_phase3_dashboard():
     """Get Phase 3 analytics dashboard data"""
@@ -4983,10 +4996,15 @@ async def get_phase3_dashboard():
         market_access_count = await db.market_access_analyses.count_documents({})
         predictive_count = await db.predictive_analyses.count_documents({})
         
-        # Get recent analyses
-        recent_rwe = await db.rwe_analyses.find({}).sort("timestamp", -1).limit(5).to_list(5)
-        recent_market_access = await db.market_access_analyses.find({}).sort("timestamp", -1).limit(5).to_list(5)
-        recent_predictive = await db.predictive_analyses.find({}).sort("timestamp", -1).limit(5).to_list(5)
+        # Get recent analyses (convert ObjectIds to strings)
+        recent_rwe_raw = await db.rwe_analyses.find({}).sort("timestamp", -1).limit(5).to_list(5)
+        recent_market_access_raw = await db.market_access_analyses.find({}).sort("timestamp", -1).limit(5).to_list(5)
+        recent_predictive_raw = await db.predictive_analyses.find({}).sort("timestamp", -1).limit(5).to_list(5)
+        
+        # Convert ObjectIds to strings for JSON serialization
+        recent_rwe = [convert_objectid_to_str(doc) for doc in recent_rwe_raw]
+        recent_market_access = [convert_objectid_to_str(doc) for doc in recent_market_access_raw]
+        recent_predictive = [convert_objectid_to_str(doc) for doc in recent_predictive_raw]
         
         return {
             "summary": {
