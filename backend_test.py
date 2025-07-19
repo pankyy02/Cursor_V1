@@ -67,6 +67,42 @@ class PharmaAPITester:
             self.log_test_result("API Health Check", False, f"Connection error: {str(e)}")
             return False
     
+    async def test_database_connection(self) -> bool:
+        """Test database connectivity and basic CRUD operations"""
+        try:
+            # Test status check endpoint (should work without API key)
+            payload = {"client_name": "test_client_pharma_testing"}
+            response = await self.client.post(f"{API_BASE_URL}/status", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("client_name") == "test_client_pharma_testing" and data.get("id"):
+                    # Test retrieval
+                    get_response = await self.client.get(f"{API_BASE_URL}/status")
+                    if get_response.status_code == 200:
+                        status_list = get_response.json()
+                        found = any(s.get("client_name") == "test_client_pharma_testing" for s in status_list)
+                        
+                        self.log_test_result("Database Connection", True, 
+                                           f"MongoDB connection working, CRUD operations successful")
+                        return True
+                    else:
+                        self.log_test_result("Database Connection", False, 
+                                           f"Status retrieval failed: {get_response.status_code}")
+                        return False
+                else:
+                    self.log_test_result("Database Connection", False, 
+                                       f"Invalid status response structure")
+                    return False
+            else:
+                self.log_test_result("Database Connection", False, 
+                                   f"Status creation failed: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Database Connection", False, f"Exception: {str(e)}")
+            return False
+    
     async def test_therapy_analysis(self) -> bool:
         """Test core therapy area analysis endpoint"""
         try:
