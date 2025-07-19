@@ -1878,6 +1878,59 @@ def generate_excel_export(analysis: dict, funnel: dict = None):
         logging.error(f"Excel generation error: {str(e)}")
         return None
 
+@api_router.post("/ensemble-analysis", response_model=EnsembleResult)
+async def ensemble_analysis_endpoint(request: EnsembleAnalysisRequest):
+    """Advanced multi-model AI ensemble analysis"""
+    try:
+        ensemble_result = await run_ensemble_analysis(
+            therapy_area=request.therapy_area,
+            product_name=request.product_name,
+            analysis_type=request.analysis_type,
+            claude_key=request.claude_api_key,
+            perplexity_key=request.perplexity_api_key,
+            gemini_key=request.gemini_api_key,
+            use_gemini=request.use_gemini
+        )
+        
+        # Store ensemble result in database
+        await db.ensemble_analyses.insert_one({
+            "therapy_area": request.therapy_area,
+            "product_name": request.product_name,
+            "analysis_type": request.analysis_type,
+            "ensemble_result": ensemble_result.dict(),
+            "timestamp": datetime.utcnow(),
+            "model_agreement_score": ensemble_result.model_agreement_score,
+            "models_used": list(ensemble_result.confidence_scores.keys())
+        })
+        
+        return ensemble_result
+        
+    except Exception as e:
+        logger.error(f"Ensemble analysis endpoint error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ensemble analysis failed: {str(e)}")
+
+@api_router.get("/ensemble-history")
+async def get_ensemble_history(limit: int = 10):
+    """Retrieve ensemble analysis history"""
+    try:
+        results = await db.ensemble_analyses.find().sort("timestamp", -1).limit(limit).to_list(limit)
+        return {
+            "ensemble_analyses": [
+                {
+                    "id": str(result["_id"]),
+                    "therapy_area": result["therapy_area"],
+                    "product_name": result.get("product_name"),
+                    "analysis_type": result["analysis_type"],
+                    "model_agreement_score": result["model_agreement_score"],
+                    "models_used": result["models_used"],
+                    "timestamp": result["timestamp"]
+                } for result in results
+            ],
+            "total_count": len(results)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/company-intelligence", response_model=CompanyIntelligence)
 async def company_intelligence_endpoint(request: CompanyIntelRequest):
     """Generate comprehensive company intelligence from product name"""
