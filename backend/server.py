@@ -1340,6 +1340,49 @@ def generate_excel_export(analysis: dict, funnel: dict = None):
         logging.error(f"Excel generation error: {str(e)}")
         return None
 
+@api_router.post("/company-intelligence", response_model=CompanyIntelligence)
+async def company_intelligence_endpoint(request: CompanyIntelRequest):
+    """Generate comprehensive company intelligence from product name"""
+    try:
+        intelligence = await generate_company_intelligence(
+            product_name=request.product_name,
+            therapy_area=request.therapy_area,
+            perplexity_key=request.api_key,
+            include_competitors=request.include_competitors
+        )
+        
+        # Store intelligence in database
+        await db.company_intelligence.insert_one({
+            "product_name": request.product_name,
+            "intelligence": intelligence.dict(),
+            "timestamp": datetime.utcnow(),
+            "therapy_area": request.therapy_area
+        })
+        
+        return intelligence
+        
+    except Exception as e:
+        logger.error(f"Company intelligence endpoint error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Company intelligence failed: {str(e)}")
+
+@api_router.get("/company-intelligence/{product_name}")
+async def get_company_intelligence(product_name: str):
+    """Retrieve stored company intelligence"""
+    try:
+        result = await db.company_intelligence.find_one(
+            {"product_name": {"$regex": product_name, "$options": "i"}},
+            sort=[("timestamp", -1)]
+        )
+        
+        if result:
+            return CompanyIntelligence(**result["intelligence"])
+        else:
+            raise HTTPException(status_code=404, detail="Company intelligence not found")
+            
+    except Exception as e:
+        logger.error(f"Company intelligence retrieval error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/perplexity-search", response_model=PerplexityResult)
 async def perplexity_search_endpoint(request: PerplexityRequest):
     """Real-time pharmaceutical intelligence search using Perplexity API"""
