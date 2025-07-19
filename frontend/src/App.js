@@ -222,6 +222,37 @@ const App = () => {
     }
   };
 
+  const handleCompanyIntelligence = async () => {
+    if (!perplexityKey.trim()) {
+      setError("Please enter your Perplexity API key for company intelligence");
+      return;
+    }
+    if (!productName.trim()) {
+      setError("Please enter a product name for company intelligence");
+      return;
+    }
+
+    setLoadingState('company', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/company-intelligence`, {
+        product_name: productName,
+        therapy_area: therapyArea,
+        api_key: perplexityKey,
+        include_competitors: true
+      });
+
+      setCompanyIntelligence(response.data);
+      setActiveTab("company");
+    } catch (error) {
+      console.error("Company intelligence error:", error);
+      setError(error.response?.data?.detail || "Company intelligence failed. Please check your Perplexity API key.");
+    } finally {
+      setLoadingState('company', false);
+    }
+  };
+
   const handleRealTimeSearch = async () => {
     if (!perplexityKey.trim()) {
       setError("Please enter your Perplexity API key");
