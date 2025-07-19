@@ -830,6 +830,428 @@ class PharmaAPITester:
             return False
     
     # ========================================
+    # PHASE 3: REAL-WORLD EVIDENCE & MARKET ACCESS INTELLIGENCE TESTS
+    # ========================================
+    
+    async def test_real_world_evidence_endpoint(self) -> bool:
+        """Test Real-World Evidence analysis endpoint"""
+        try:
+            payload = {
+                "therapy_area": TEST_THERAPY_AREA,
+                "product_name": TEST_PRODUCT_NAME,
+                "analysis_type": "comprehensive",
+                "data_sources": ["registries", "claims", "ehr", "patient_outcomes"],
+                "api_key": TEST_API_KEY
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/real-world-evidence", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["id", "therapy_area", "effectiveness_data", "safety_profile", 
+                                 "patient_outcomes", "real_world_performance", "comparative_effectiveness",
+                                 "cost_effectiveness", "adherence_patterns", "health_economics_data",
+                                 "evidence_quality_score", "data_sources", "study_populations",
+                                 "limitations", "recommendations"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("Real-World Evidence Analysis", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate therapy area and product name
+                if data.get("therapy_area") != TEST_THERAPY_AREA:
+                    self.log_test_result("Real-World Evidence Analysis", False, 
+                                       f"Therapy area mismatch: {data.get('therapy_area')}")
+                    return False
+                
+                if data.get("product_name") != TEST_PRODUCT_NAME:
+                    self.log_test_result("Real-World Evidence Analysis", False, 
+                                       f"Product name mismatch: {data.get('product_name')}")
+                    return False
+                
+                # Validate evidence quality score
+                evidence_score = data.get("evidence_quality_score", 0)
+                if not isinstance(evidence_score, (int, float)) or evidence_score < 0 or evidence_score > 1:
+                    self.log_test_result("Real-World Evidence Analysis", False, 
+                                       f"Invalid evidence quality score: {evidence_score}")
+                    return False
+                
+                # Validate data sources
+                returned_sources = data.get("data_sources", [])
+                if not all(source in returned_sources for source in payload["data_sources"]):
+                    self.log_test_result("Real-World Evidence Analysis", False, 
+                                       f"Data sources mismatch: expected {payload['data_sources']}, got {returned_sources}")
+                    return False
+                
+                # Check for content in key sections
+                effectiveness_data = data.get("effectiveness_data", {})
+                safety_profile = data.get("safety_profile", {})
+                patient_outcomes = data.get("patient_outcomes", {})
+                
+                has_effectiveness = isinstance(effectiveness_data, dict) and len(effectiveness_data) > 0
+                has_safety = isinstance(safety_profile, dict) and len(safety_profile) > 0
+                has_outcomes = isinstance(patient_outcomes, dict) and len(patient_outcomes) > 0
+                
+                # Validate recommendations and limitations
+                recommendations = data.get("recommendations", [])
+                limitations = data.get("limitations", [])
+                
+                has_recommendations = isinstance(recommendations, list) and len(recommendations) > 0
+                has_limitations = isinstance(limitations, list) and len(limitations) > 0
+                
+                self.log_test_result("Real-World Evidence Analysis", True, 
+                                   f"RWE analysis generated successfully. "
+                                   f"Evidence score: {evidence_score:.2f}, "
+                                   f"Data sources: {len(returned_sources)}, "
+                                   f"Has effectiveness: {has_effectiveness}, "
+                                   f"Has safety: {has_safety}, "
+                                   f"Has outcomes: {has_outcomes}, "
+                                   f"Recommendations: {len(recommendations)}, "
+                                   f"Limitations: {len(limitations)}")
+                return True
+                
+            elif response.status_code == 500:
+                error_text = response.text.lower()
+                if "api" in error_text and ("key" in error_text or "auth" in error_text):
+                    self.log_test_result("Real-World Evidence Analysis", False, 
+                                       "Claude API key authentication required - endpoint structure validated")
+                    return False
+                else:
+                    self.log_test_result("Real-World Evidence Analysis", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Real-World Evidence Analysis", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Real-World Evidence Analysis", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_market_access_intelligence_endpoint(self) -> bool:
+        """Test Market Access Intelligence analysis endpoint"""
+        try:
+            payload = {
+                "therapy_area": TEST_THERAPY_AREA,
+                "product_name": TEST_PRODUCT_NAME,
+                "target_markets": ["US", "EU5", "Japan"],
+                "analysis_depth": "comprehensive",
+                "api_key": TEST_PERPLEXITY_KEY  # Using Perplexity for market access
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/market-access-intelligence", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["id", "therapy_area", "payer_landscape", "reimbursement_pathways",
+                                 "pricing_analysis", "access_barriers", "heor_requirements",
+                                 "regulatory_pathways", "approval_timelines", "formulary_placement",
+                                 "budget_impact_models", "coverage_policies", "stakeholder_mapping",
+                                 "market_readiness_score", "recommendations"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("Market Access Intelligence", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate therapy area and product name
+                if data.get("therapy_area") != TEST_THERAPY_AREA:
+                    self.log_test_result("Market Access Intelligence", False, 
+                                       f"Therapy area mismatch: {data.get('therapy_area')}")
+                    return False
+                
+                # Validate market readiness score
+                readiness_score = data.get("market_readiness_score", 0)
+                if not isinstance(readiness_score, (int, float)) or readiness_score < 0 or readiness_score > 1:
+                    self.log_test_result("Market Access Intelligence", False, 
+                                       f"Invalid market readiness score: {readiness_score}")
+                    return False
+                
+                # Check for content in key sections
+                payer_landscape = data.get("payer_landscape", {})
+                reimbursement_pathways = data.get("reimbursement_pathways", {})
+                pricing_analysis = data.get("pricing_analysis", {})
+                access_barriers = data.get("access_barriers", [])
+                
+                has_payer_data = isinstance(payer_landscape, dict) and len(payer_landscape) > 0
+                has_reimbursement = isinstance(reimbursement_pathways, dict) and len(reimbursement_pathways) > 0
+                has_pricing = isinstance(pricing_analysis, dict) and len(pricing_analysis) > 0
+                has_barriers = isinstance(access_barriers, list) and len(access_barriers) > 0
+                
+                # Validate recommendations
+                recommendations = data.get("recommendations", [])
+                has_recommendations = isinstance(recommendations, list) and len(recommendations) > 0
+                
+                self.log_test_result("Market Access Intelligence", True, 
+                                   f"Market access analysis generated successfully. "
+                                   f"Readiness score: {readiness_score:.2f}, "
+                                   f"Has payer data: {has_payer_data}, "
+                                   f"Has reimbursement: {has_reimbursement}, "
+                                   f"Has pricing: {has_pricing}, "
+                                   f"Access barriers: {len(access_barriers)}, "
+                                   f"Recommendations: {len(recommendations)}")
+                return True
+                
+            elif response.status_code == 500:
+                error_text = response.text.lower()
+                if "api" in error_text and ("key" in error_text or "auth" in error_text):
+                    self.log_test_result("Market Access Intelligence", False, 
+                                       "Perplexity API key authentication required - endpoint structure validated")
+                    return False
+                else:
+                    self.log_test_result("Market Access Intelligence", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Market Access Intelligence", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Market Access Intelligence", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_predictive_analytics_endpoint(self) -> bool:
+        """Test Predictive Analytics with ML-enhanced forecasting endpoint"""
+        try:
+            payload = {
+                "therapy_area": TEST_THERAPY_AREA,
+                "product_name": TEST_PRODUCT_NAME,
+                "forecast_horizon": 10,
+                "model_type": "ml_enhanced",
+                "include_rwe": True,
+                "api_key": TEST_API_KEY
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/predictive-analytics", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["id", "therapy_area", "market_penetration_forecast", 
+                                 "competitive_response_modeling", "patient_flow_predictions",
+                                 "revenue_forecasts", "risk_adjusted_projections", 
+                                 "scenario_probabilities", "confidence_intervals",
+                                 "key_assumptions", "sensitivity_factors", 
+                                 "model_performance_metrics", "uncertainty_analysis", "recommendations"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("Predictive Analytics", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate therapy area and product name
+                if data.get("therapy_area") != TEST_THERAPY_AREA:
+                    self.log_test_result("Predictive Analytics", False, 
+                                       f"Therapy area mismatch: {data.get('therapy_area')}")
+                    return False
+                
+                # Check for content in key sections
+                market_penetration = data.get("market_penetration_forecast", {})
+                competitive_response = data.get("competitive_response_modeling", {})
+                revenue_forecasts = data.get("revenue_forecasts", {})
+                scenario_probabilities = data.get("scenario_probabilities", {})
+                
+                has_market_penetration = isinstance(market_penetration, dict) and len(market_penetration) > 0
+                has_competitive = isinstance(competitive_response, dict) and len(competitive_response) > 0
+                has_revenue = isinstance(revenue_forecasts, dict) and len(revenue_forecasts) > 0
+                has_scenarios = isinstance(scenario_probabilities, dict) and len(scenario_probabilities) > 0
+                
+                # Validate model performance metrics
+                model_performance = data.get("model_performance_metrics", {})
+                has_performance = isinstance(model_performance, dict) and len(model_performance) > 0
+                
+                # Validate assumptions and recommendations
+                assumptions = data.get("key_assumptions", [])
+                recommendations = data.get("recommendations", [])
+                
+                has_assumptions = isinstance(assumptions, list) and len(assumptions) > 0
+                has_recommendations = isinstance(recommendations, list) and len(recommendations) > 0
+                
+                self.log_test_result("Predictive Analytics", True, 
+                                   f"Predictive analytics generated successfully. "
+                                   f"Has market penetration: {has_market_penetration}, "
+                                   f"Has competitive modeling: {has_competitive}, "
+                                   f"Has revenue forecasts: {has_revenue}, "
+                                   f"Has scenarios: {has_scenarios}, "
+                                   f"Has performance metrics: {has_performance}, "
+                                   f"Assumptions: {len(assumptions)}, "
+                                   f"Recommendations: {len(recommendations)}")
+                return True
+                
+            elif response.status_code == 500:
+                error_text = response.text.lower()
+                if "api" in error_text and ("key" in error_text or "auth" in error_text):
+                    self.log_test_result("Predictive Analytics", False, 
+                                       "Claude API key authentication required - endpoint structure validated")
+                    return False
+                else:
+                    self.log_test_result("Predictive Analytics", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Predictive Analytics", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Predictive Analytics", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_phase3_dashboard_endpoint(self) -> bool:
+        """Test Phase 3 analytics dashboard endpoint"""
+        try:
+            response = await self.client.get(f"{API_BASE_URL}/phase3-dashboard")
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_sections = ["summary", "recent_analyses", "capabilities"]
+                missing_sections = [section for section in required_sections if section not in data]
+                
+                if missing_sections:
+                    self.log_test_result("Phase 3 Dashboard", False, 
+                                       f"Missing required sections: {missing_sections}")
+                    return False
+                
+                # Validate summary section
+                summary = data.get("summary", {})
+                required_summary_fields = ["rwe_analyses", "market_access_analyses", 
+                                         "predictive_analyses", "total_phase3_analyses"]
+                missing_summary = [field for field in required_summary_fields if field not in summary]
+                
+                if missing_summary:
+                    self.log_test_result("Phase 3 Dashboard", False, 
+                                       f"Missing summary fields: {missing_summary}")
+                    return False
+                
+                # Validate recent analyses section
+                recent_analyses = data.get("recent_analyses", {})
+                required_recent = ["rwe", "market_access", "predictive"]
+                missing_recent = [field for field in required_recent if field not in recent_analyses]
+                
+                if missing_recent:
+                    self.log_test_result("Phase 3 Dashboard", False, 
+                                       f"Missing recent analyses: {missing_recent}")
+                    return False
+                
+                # Validate capabilities section
+                capabilities = data.get("capabilities", {})
+                required_capabilities = ["real_world_evidence", "market_access", "predictive_analytics"]
+                missing_capabilities = [field for field in required_capabilities if field not in capabilities]
+                
+                if missing_capabilities:
+                    self.log_test_result("Phase 3 Dashboard", False, 
+                                       f"Missing capabilities: {missing_capabilities}")
+                    return False
+                
+                # Check counts
+                rwe_count = summary.get("rwe_analyses", 0)
+                market_access_count = summary.get("market_access_analyses", 0)
+                predictive_count = summary.get("predictive_analyses", 0)
+                total_count = summary.get("total_phase3_analyses", 0)
+                
+                # Validate total calculation
+                expected_total = rwe_count + market_access_count + predictive_count
+                if total_count != expected_total:
+                    self.log_test_result("Phase 3 Dashboard", False, 
+                                       f"Total count mismatch: expected {expected_total}, got {total_count}")
+                    return False
+                
+                # Check capabilities content
+                rwe_capabilities = capabilities.get("real_world_evidence", [])
+                market_capabilities = capabilities.get("market_access", [])
+                predictive_capabilities = capabilities.get("predictive_analytics", [])
+                
+                has_rwe_caps = isinstance(rwe_capabilities, list) and len(rwe_capabilities) > 0
+                has_market_caps = isinstance(market_capabilities, list) and len(market_capabilities) > 0
+                has_predictive_caps = isinstance(predictive_capabilities, list) and len(predictive_capabilities) > 0
+                
+                self.log_test_result("Phase 3 Dashboard", True, 
+                                   f"Dashboard data retrieved successfully. "
+                                   f"RWE analyses: {rwe_count}, "
+                                   f"Market access analyses: {market_access_count}, "
+                                   f"Predictive analyses: {predictive_count}, "
+                                   f"Total: {total_count}, "
+                                   f"Capabilities: RWE={len(rwe_capabilities)}, "
+                                   f"Market={len(market_capabilities)}, "
+                                   f"Predictive={len(predictive_capabilities)}")
+                return True
+                
+            else:
+                self.log_test_result("Phase 3 Dashboard", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Phase 3 Dashboard", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_phase3_data_retrieval_endpoints(self) -> bool:
+        """Test Phase 3 data retrieval endpoints"""
+        try:
+            # Test RWE retrieval endpoint
+            rwe_response = await self.client.get(f"{API_BASE_URL}/real-world-evidence/{TEST_THERAPY_AREA}")
+            rwe_success = rwe_response.status_code in [200, 404]  # 404 is acceptable if no data exists
+            
+            # Test Market Access retrieval endpoint
+            market_response = await self.client.get(f"{API_BASE_URL}/market-access-intelligence/{TEST_THERAPY_AREA}")
+            market_success = market_response.status_code in [200, 404]
+            
+            # Test Predictive Analytics retrieval endpoint
+            predictive_response = await self.client.get(f"{API_BASE_URL}/predictive-analytics/{TEST_THERAPY_AREA}")
+            predictive_success = predictive_response.status_code in [200, 404]
+            
+            # Test with product name parameter
+            rwe_with_product = await self.client.get(
+                f"{API_BASE_URL}/real-world-evidence/{TEST_THERAPY_AREA}",
+                params={"product_name": TEST_PRODUCT_NAME}
+            )
+            rwe_product_success = rwe_with_product.status_code in [200, 404]
+            
+            # Check if any data was found
+            data_found = False
+            if rwe_response.status_code == 200:
+                rwe_data = rwe_response.json()
+                if rwe_data.get("therapy_area"):
+                    data_found = True
+            
+            if market_response.status_code == 200:
+                market_data = market_response.json()
+                if market_data.get("therapy_area"):
+                    data_found = True
+            
+            if predictive_response.status_code == 200:
+                predictive_data = predictive_response.json()
+                if predictive_data.get("therapy_area"):
+                    data_found = True
+            
+            success = rwe_success and market_success and predictive_success and rwe_product_success
+            
+            self.log_test_result("Phase 3 Data Retrieval Endpoints", success, 
+                               f"RWE endpoint: {rwe_response.status_code}, "
+                               f"Market access endpoint: {market_response.status_code}, "
+                               f"Predictive endpoint: {predictive_response.status_code}, "
+                               f"RWE with product: {rwe_with_product.status_code}, "
+                               f"Data found: {data_found}")
+            return success
+            
+        except Exception as e:
+            self.log_test_result("Phase 3 Data Retrieval Endpoints", False, f"Exception: {str(e)}")
+            return False
+
+    # ========================================
     # COMPANY INTELLIGENCE ENGINE TESTS
     # ========================================
     
