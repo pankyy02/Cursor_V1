@@ -3399,6 +3399,37 @@ const App = () => {
                         <h4 className="font-semibold text-gray-900">Predictive Analytics</h4>
                         <p className="text-sm">ML-enhanced forecasting & competitive response modeling</p>
                       </div>
+
+                      {/* Phase 4: New Features */}
+                      <div className="bg-gradient-to-r from-gold-50 to-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <div className="text-2xl mb-2">🔐</div>
+                        <h4 className="font-semibold text-gray-900">User Management & Auth</h4>
+                        <p className="text-sm">Secure accounts, session management & user profiles</p>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-4 rounded-lg border border-emerald-200">
+                        <div className="text-2xl mb-2">💳</div>
+                        <h4 className="font-semibold text-gray-900">Subscription Plans</h4>
+                        <p className="text-sm">Flexible pricing tiers with Stripe payment integration</p>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-4 rounded-lg border border-violet-200">
+                        <div className="text-2xl mb-2">🤖</div>
+                        <h4 className="font-semibold text-gray-900">Automated Workflows</h4>
+                        <p className="text-sm">Scheduled analysis, smart alerts & automated reporting</p>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-rose-50 to-pink-50 p-4 rounded-lg border border-rose-200">
+                        <div className="text-2xl mb-2">👑</div>
+                        <h4 className="font-semibold text-gray-900">Executive Dashboard</h4>
+                        <p className="text-sm">C-level KPIs, strategic insights & performance analytics</p>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-lg border border-sky-200">
+                        <div className="text-2xl mb-2">🔗</div>
+                        <h4 className="font-semibold text-gray-900">API & Integrations</h4>
+                        <p className="text-sm">REST APIs, webhooks & enterprise system integrations</p>
+                      </div>
                     </div>
                     
                     <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
