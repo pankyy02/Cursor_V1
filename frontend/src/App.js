@@ -730,14 +730,10 @@ const App = () => {
                       {/* Scenario Models Visualization */}
                       {funnel.visualization_data && funnel.visualization_data.scenario_chart && (
                         <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-4">📈 Scenario Forecasts</h4>
-                          <div 
-                            dangerouslySetInnerHTML={{
-                              __html: `<div id="scenario-chart-${funnel.id}"></div>
-                              <script>
-                                Plotly.newPlot('scenario-chart-${funnel.id}', ${funnel.visualization_data.scenario_chart});
-                              </script>`
-                            }}
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4">📈 Market Forecast Scenarios</h4>
+                          <PlotlyChart 
+                            data={funnel.visualization_data.scenario_chart} 
+                            id={`scenario-chart-${funnel.id}`}
                           />
                         </div>
                       )}
