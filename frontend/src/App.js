@@ -883,6 +883,175 @@ const App = () => {
                 </div>
 
                 <div className="p-6">
+                  {/* Multi-Model Ensemble Analysis Tab */}
+                  {activeTab === "ensemble" && ensembleResult && (
+                    <div className="space-y-6">
+                      <div className="mb-4">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                          🤖 Multi-Model Ensemble Analysis
+                        </h3>
+                        <p className="text-gray-600 mb-3">
+                          Advanced AI analysis combining insights from multiple models for {ensembleResult.therapy_area}
+                          {ensembleResult.product_name && <span className="font-medium"> - {ensembleResult.product_name}</span>}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(ensembleResult.confidence_scores).map(([model, score]) => (
+                            <span key={model} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                              🤖 {model}: {(score * 100).toFixed(0)}% confidence
+                            </span>
+                          ))}
+                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                            📊 Agreement: {(ensembleResult.model_agreement_score * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Model Agreement & Recommendation */}
+                      <div className={`rounded-lg p-4 border-2 ${
+                        ensembleResult.model_agreement_score > 0.8 ? 'bg-green-50 border-green-200' :
+                        ensembleResult.model_agreement_score > 0.6 ? 'bg-yellow-50 border-yellow-200' :
+                        'bg-red-50 border-red-200'
+                      }`}>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                          {ensembleResult.model_agreement_score > 0.8 ? '✅' : 
+                           ensembleResult.model_agreement_score > 0.6 ? '⚠️' : '🚨'} 
+                          Ensemble Recommendation
+                        </h4>
+                        <p className="text-gray-700 font-medium mb-2">{ensembleResult.recommendation}</p>
+                        <div className="text-sm text-gray-600">
+                          Model Agreement Score: {(ensembleResult.model_agreement_score * 100).toFixed(1)}%
+                        </div>
+                      </div>
+
+                      {/* Consensus Insights */}
+                      {ensembleResult.consensus_insights.length > 0 && (
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">🎯 Consensus Insights</h4>
+                          <ul className="space-y-2">
+                            {ensembleResult.consensus_insights.map((insight, index) => (
+                              <li key={index} className="flex items-start">
+                                <span className="text-blue-600 mr-2">•</span>
+                                <span className="text-gray-700">{insight}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Conflicting Points */}
+                      {ensembleResult.conflicting_points.length > 0 && (
+                        <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">⚠️ Areas of Disagreement</h4>
+                          <ul className="space-y-2">
+                            {ensembleResult.conflicting_points.map((conflict, index) => (
+                              <li key={index} className="flex items-start">
+                                <span className="text-orange-600 mr-2">•</span>
+                                <span className="text-gray-700">{conflict}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Individual Model Analyses */}
+                      <div className="grid lg:grid-cols-3 gap-4">
+                        {/* Claude Analysis */}
+                        <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                          <h5 className="font-semibold text-indigo-900 mb-2 flex items-center">
+                            🧠 Claude Analysis
+                            <span className="ml-2 text-sm bg-indigo-200 px-2 py-1 rounded">
+                              {(ensembleResult.claude_analysis.confidence_score * 100).toFixed(0)}%
+                            </span>
+                          </h5>
+                          <div className="text-sm text-gray-700 max-h-40 overflow-y-auto">
+                            {ensembleResult.claude_analysis.analysis.slice(0, 500)}...
+                          </div>
+                          {ensembleResult.claude_analysis.error && (
+                            <div className="text-red-600 text-xs mt-2">
+                              Error: {ensembleResult.claude_analysis.error}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Perplexity Intelligence */}
+                        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                          <h5 className="font-semibold text-green-900 mb-2 flex items-center">
+                            🔍 Perplexity Intelligence
+                            <span className="ml-2 text-sm bg-green-200 px-2 py-1 rounded">
+                              {(ensembleResult.perplexity_intelligence.confidence_score * 100).toFixed(0)}%
+                            </span>
+                          </h5>
+                          <div className="text-sm text-gray-700 max-h-40 overflow-y-auto mb-2">
+                            {ensembleResult.perplexity_intelligence.analysis.slice(0, 500)}...
+                          </div>
+                          {ensembleResult.perplexity_intelligence.citation_count > 0 && (
+                            <div className="text-xs text-green-600">
+                              📚 {ensembleResult.perplexity_intelligence.citation_count} sources cited
+                            </div>
+                          )}
+                          {ensembleResult.perplexity_intelligence.error && (
+                            <div className="text-red-600 text-xs mt-2">
+                              Error: {ensembleResult.perplexity_intelligence.error}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Gemini Analysis (if available) */}
+                        {ensembleResult.gemini_analysis && (
+                          <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                            <h5 className="font-semibold text-purple-900 mb-2 flex items-center">
+                              ✨ Gemini Analysis
+                              <span className="ml-2 text-sm bg-purple-200 px-2 py-1 rounded">
+                                {(ensembleResult.gemini_analysis.confidence_score * 100).toFixed(0)}%
+                              </span>
+                            </h5>
+                            <div className="text-sm text-gray-700 max-h-40 overflow-y-auto">
+                              {ensembleResult.gemini_analysis.analysis.slice(0, 500)}...
+                            </div>
+                            {ensembleResult.gemini_analysis.error && (
+                              <div className="text-red-600 text-xs mt-2">
+                                Error: {ensembleResult.gemini_analysis.error}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Synthesized Analysis */}
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 border border-purple-200">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-3">🎭 Synthesized Intelligence</h4>
+                        <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                          {ensembleResult.ensemble_synthesis}
+                        </div>
+                      </div>
+
+                      {/* Sources */}
+                      {ensembleResult.sources.length > 0 && (
+                        <div className="bg-gray-50 rounded-lg p-4 border">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">📚 Intelligence Sources</h4>
+                          <div className="grid md:grid-cols-3 gap-2">
+                            {ensembleResult.sources.slice(0, 9).map((source, index) => (
+                              <a
+                                key={index}
+                                href={source}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs bg-white px-2 py-1 rounded border text-blue-600 hover:bg-blue-100 truncate"
+                              >
+                                🔗 Source {index + 1}
+                              </a>
+                            ))}
+                          </div>
+                          {ensembleResult.sources.length > 9 && (
+                            <div className="text-xs text-gray-500 mt-2">
+                              ... and {ensembleResult.sources.length - 9} more sources
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Therapy Analysis Tab */}
                   {activeTab === "analysis" && analysis && (
                     <div className="space-y-6">
