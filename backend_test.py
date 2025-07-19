@@ -906,7 +906,13 @@ class PharmaAPITester:
             ("Clinical Trials Search", self.test_clinical_trials_search),
             ("Export Functionality", self.test_export_functionality),
             ("Data Persistence", self.test_data_persistence),
-            ("Visualization Data", self.test_visualization_data)
+            ("Visualization Data", self.test_visualization_data),
+            # New Perplexity Integration Tests
+            ("Perplexity Search Endpoint", self.test_perplexity_search_endpoint),
+            ("Perplexity Pharmaceutical Search", self.test_perplexity_pharmaceutical_search),
+            ("Enhanced Competitive Analysis", self.test_enhanced_competitive_analysis),
+            ("Perplexity Error Handling", self.test_perplexity_error_handling),
+            ("Perplexity Data Storage", self.test_perplexity_data_storage)
         ]
         
         results = {}
