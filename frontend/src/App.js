@@ -23,7 +23,11 @@ const App = () => {
     timeline: false,
     template: false,
     visualization: false,
-    export: false
+    export: false,
+    rwe: false,
+    market_access: false,
+    predictive: false,
+    dashboard: false
   });
   const [analysis, setAnalysis] = useState(null);
   const [funnel, setFunnel] = useState(null);
