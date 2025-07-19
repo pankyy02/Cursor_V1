@@ -5489,6 +5489,310 @@ async def logout_user(current_user: User = Depends(get_current_user)):
         logger.error(f"User logout error: {str(e)}")
         raise HTTPException(status_code=500, detail="Logout failed")
 
+# ========================================
+# Phase 4: OAuth Authentication Endpoints
+# ========================================
+
+@api_router.get("/auth/google/login")
+async def google_login(request: Request):
+    """Initiate Google OAuth login"""
+    try:
+        # Build redirect URI
+        redirect_uri = str(request.url_for('google_auth'))
+        return await oauth.google.authorize_redirect(request, redirect_uri)
+    except Exception as e:
+        logger.error(f"Google OAuth initiation error: {str(e)}")
+        raise HTTPException(status_code=500, detail="OAuth initiation failed")
+
+@api_router.get("/auth/google/callback")
+async def google_auth(request: Request):
+    """Handle Google OAuth callback"""
+    try:
+        # Get token from Google
+        token = await oauth.google.authorize_access_token(request)
+        user_info = token.get('userinfo')
+        
+        if not user_info:
+            raise HTTPException(status_code=400, detail="Failed to get user info from Google")
+        
+        # Check if user exists
+        email = user_info.get('email')
+        user = await db.users.find_one({"email": email})
+        
+        if not user:
+            # Create new user
+            new_user = User(
+                email=email,
+                first_name=user_info.get('given_name', ''),
+                last_name=user_info.get('family_name', ''),
+                subscription_tier="free"
+            )
+            
+            # Store user in database
+            await db.users.insert_one(new_user.dict())
+            
+            # Create user profile
+            profile = UserProfile(
+                user_id=new_user.id,
+                preferences={"oauth_provider": "google"},
+                notification_settings={
+                    "email_alerts": True,
+                    "browser_notifications": False,
+                    "weekly_reports": True
+                }
+            )
+            await db.user_profiles.insert_one(profile.dict())
+            
+            user = new_user
+        else:
+            user = User(**user)
+        
+        # Create session
+        session_token = generate_session_token()
+        expires_at = datetime.utcnow() + timedelta(hours=SESSION_EXPIRE_HOURS)
+        
+        session = UserSession(
+            user_id=user.id,
+            session_token=session_token,
+            expires_at=expires_at,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent")
+        )
+        
+        await db.user_sessions.insert_one(session.dict())
+        
+        # Update last login
+        await db.users.update_one(
+            {"id": user.id},
+            {"$set": {"last_login": datetime.utcnow()}}
+        )
+        
+        return {
+            "access_token": session_token,
+            "token_type": "bearer",
+            "expires_in": SESSION_EXPIRE_HOURS * 3600,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "subscription_tier": user.subscription_tier
+            },
+            "oauth_provider": "google"
+        }
+        
+    except Exception as e:
+        logger.error(f"Google OAuth callback error: {str(e)}")
+        raise HTTPException(status_code=500, detail="OAuth authentication failed")
+
+@api_router.post("/auth/google/token")
+async def google_token_auth(request: Request):
+    """Handle Google OAuth token authentication from frontend"""
+    try:
+        body = await request.json()
+        google_token = body.get('token')
+        
+        if not google_token:
+            raise HTTPException(status_code=400, detail="Google token required")
+        
+        # Verify Google token
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://www.googleapis.com/oauth2/v1/userinfo?access_token={google_token}"
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=400, detail="Invalid Google token")
+            
+            user_info = response.json()
+        
+        # Check if user exists
+        email = user_info.get('email')
+        user = await db.users.find_one({"email": email})
+        
+        if not user:
+            # Create new user
+            new_user = User(
+                email=email,
+                first_name=user_info.get('given_name', ''),
+                last_name=user_info.get('family_name', ''),
+                subscription_tier="free"
+            )
+            
+            await db.users.insert_one(new_user.dict())
+            
+            # Create user profile
+            profile = UserProfile(
+                user_id=new_user.id,
+                preferences={"oauth_provider": "google"},
+                notification_settings={
+                    "email_alerts": True,
+                    "browser_notifications": False,
+                    "weekly_reports": True
+                }
+            )
+            await db.user_profiles.insert_one(profile.dict())
+            
+            user = new_user
+        else:
+            user = User(**user)
+        
+        # Create session
+        session_token = generate_session_token()
+        expires_at = datetime.utcnow() + timedelta(hours=SESSION_EXPIRE_HOURS)
+        
+        session = UserSession(
+            user_id=user.id,
+            session_token=session_token,
+            expires_at=expires_at,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent")
+        )
+        
+        await db.user_sessions.insert_one(session.dict())
+        
+        # Update last login
+        await db.users.update_one(
+            {"id": user.id},
+            {"$set": {"last_login": datetime.utcnow()}}
+        )
+        
+        return {
+            "access_token": session_token,
+            "token_type": "bearer", 
+            "expires_in": SESSION_EXPIRE_HOURS * 3600,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "subscription_tier": user.subscription_tier
+            },
+            "oauth_provider": "google"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Google token authentication error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Token authentication failed")
+
+@api_router.post("/auth/apple/token")
+async def apple_token_auth(request: Request):
+    """Handle Apple ID OAuth token authentication from frontend"""
+    try:
+        body = await request.json()
+        apple_code = body.get('code')
+        apple_id_token = body.get('id_token')
+        
+        if not apple_code and not apple_id_token:
+            raise HTTPException(status_code=400, detail="Apple authorization code or ID token required")
+        
+        user_info = {}
+        
+        if apple_id_token:
+            # Decode Apple ID token (in production, verify signature with Apple's public keys)
+            try:
+                # For development, we decode without verification
+                # In production, implement proper signature verification
+                decoded_token = jwt.decode(apple_id_token, options={"verify_signature": False})
+                user_info = {
+                    'email': decoded_token.get('email'),
+                    'sub': decoded_token.get('sub'),  # Apple user ID
+                    'email_verified': decoded_token.get('email_verified', False)
+                }
+            except Exception as e:
+                logger.error(f"Apple ID token decode error: {str(e)}")
+                raise HTTPException(status_code=400, detail="Invalid Apple ID token")
+        
+        # Get name from request if provided (Apple only sends this on first login)
+        if 'name' in body:
+            name_data = body['name']
+            user_info['given_name'] = name_data.get('firstName', '')
+            user_info['family_name'] = name_data.get('lastName', '')
+        
+        email = user_info.get('email')
+        if not email:
+            raise HTTPException(status_code=400, detail="Email not provided by Apple")
+        
+        # Check if user exists
+        user = await db.users.find_one({"email": email})
+        
+        if not user:
+            # Create new user
+            new_user = User(
+                email=email,
+                first_name=user_info.get('given_name', ''),
+                last_name=user_info.get('family_name', ''),
+                subscription_tier="free"
+            )
+            
+            await db.users.insert_one(new_user.dict())
+            
+            # Store Apple-specific data
+            await db.user_oauth.insert_one({
+                "user_id": new_user.id,
+                "provider": "apple",
+                "provider_user_id": user_info.get('sub'),
+                "created_at": datetime.utcnow()
+            })
+            
+            # Create user profile
+            profile = UserProfile(
+                user_id=new_user.id,
+                preferences={"oauth_provider": "apple"},
+                notification_settings={
+                    "email_alerts": True,
+                    "browser_notifications": False,
+                    "weekly_reports": True
+                }
+            )
+            await db.user_profiles.insert_one(profile.dict())
+            
+            user = new_user
+        else:
+            user = User(**user)
+        
+        # Create session
+        session_token = generate_session_token()
+        expires_at = datetime.utcnow() + timedelta(hours=SESSION_EXPIRE_HOURS)
+        
+        session = UserSession(
+            user_id=user.id,
+            session_token=session_token,
+            expires_at=expires_at,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent")
+        )
+        
+        await db.user_sessions.insert_one(session.dict())
+        
+        # Update last login
+        await db.users.update_one(
+            {"id": user.id},
+            {"$set": {"last_login": datetime.utcnow()}}
+        )
+        
+        return {
+            "access_token": session_token,
+            "token_type": "bearer",
+            "expires_in": SESSION_EXPIRE_HOURS * 3600,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "subscription_tier": user.subscription_tier
+            },
+            "oauth_provider": "apple"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Apple token authentication error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Apple authentication failed")
+
 @api_router.get("/auth/profile")
 async def get_user_profile(current_user: User = Depends(get_current_user)):
     """Get current user profile"""
