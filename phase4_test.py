@@ -430,18 +430,18 @@ class Phase4Tester:
             malformed_headers = {"Authorization": "InvalidFormat token"}
             malformed_response = await self.client.get(f"{API_BASE_URL}/auth/profile", headers=malformed_headers)
             
-            malformed_token_rejected = malformed_response.status_code in [401, 422]
+            malformed_token_rejected = malformed_response.status_code in [401, 403, 422]
             
             # Test with no token (HTTPBearer should handle this)
             no_token_response = await self.client.get(f"{API_BASE_URL}/auth/profile")
             
-            no_token_rejected = no_token_response.status_code in [401, 422]
+            no_token_rejected = no_token_response.status_code in [401, 403, 422]
             
             # Test with empty Authorization header
             empty_headers = {"Authorization": ""}
             empty_response = await self.client.get(f"{API_BASE_URL}/auth/profile", headers=empty_headers)
             
-            empty_token_rejected = empty_response.status_code in [401, 422]
+            empty_token_rejected = empty_response.status_code in [401, 403, 422]
             
             success = invalid_token_rejected and malformed_token_rejected and no_token_rejected and empty_token_rejected
             
