@@ -606,6 +606,7 @@ class PharmaAPITester:
         tests = [
             ("API Health Check", self.test_api_health),
             ("Database Connection", self.test_database_connection),
+            ("Existing Data Retrieval", self.test_existing_data_retrieval),
             ("Core Analysis Endpoint", self.test_therapy_analysis),
             ("Funnel Generation", self.test_funnel_generation),
             ("Competitive Intelligence", self.test_competitive_analysis),
