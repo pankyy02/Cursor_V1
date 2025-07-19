@@ -285,6 +285,156 @@ def create_scenario_comparison_chart(scenario_models, therapy_area="", product_n
     
     return json.dumps(fig, cls=PlotlyJSONEncoder)
 
+# Perplexity Integration Functions
+async def search_with_perplexity(query: str, api_key: str, search_focus: str = "pharmaceutical") -> PerplexityResult:
+    """Enhanced search using Perplexity API with citations"""
+    try:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        # Enhanced prompt for pharmaceutical intelligence
+        enhanced_query = f"""
+        {query}
+        
+        Please provide a comprehensive analysis focusing on:
+        - Latest market data and quantitative metrics
+        - Key pharmaceutical companies and their market positions
+        - Recent clinical trial results and regulatory updates
+        - Financial metrics (market size, growth rates, pricing)
+        - Competitive landscape and market trends
+        
+        Provide specific numbers, percentages, and recent developments with dates.
+        Focus on actionable pharmaceutical intelligence.
+        """
+        
+        payload = {
+            "model": "sonar-pro",
+            "messages": [
+                {
+                    "role": "system", 
+                    "content": f"You are an expert pharmaceutical intelligence analyst. Provide structured, quantitative analysis with specific data points, market metrics, and recent developments. Always cite reliable sources and include numerical data where available. Focus on {search_focus} intelligence."
+                },
+                {
+                    "role": "user",
+                    "content": enhanced_query
+                }
+            ],
+            "search_recency_filter": "month",
+            "return_citations": True,
+            "search_domain_filter": ["clinicaltrials.gov", "fda.gov", "ema.europa.eu", "sec.gov", "pharmaceutical-journal.com", "biopharmadive.com", "fiercepharma.com"]
+        }
+        
+        timeout = httpx.Timeout(45.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(
+                "https://api.perplexity.ai/chat/completions",
+                json=payload,
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                content = data["choices"][0]["message"]["content"]
+                
+                # Extract citations from the response
+                citations = []
+                if "citations" in data:
+                    citations = data["citations"]
+                else:
+                    # Fallback: extract URLs from content
+                    import re
+                    url_pattern = r'https?://[^\s\])]+'
+                    citations = re.findall(url_pattern, content)
+                    citations = list(set(citations))  # Remove duplicates
+                
+                return PerplexityResult(
+                    content=content,
+                    citations=citations,
+                    search_query=query
+                )
+            else:
+                logging.error(f"Perplexity API error: {response.status_code} - {response.text}")
+                return PerplexityResult(
+                    content=f"Search failed with status {response.status_code}. Please check your Perplexity API key.",
+                    citations=[],
+                    search_query=query
+                )
+                
+    except Exception as e:
+        logging.error(f"Perplexity search error: {str(e)}")
+        return PerplexityResult(
+            content=f"Search error: {str(e)}. Please verify your Perplexity API key is valid.",
+            citations=[],
+            search_query=query
+        )
+
+async def enhanced_competitive_analysis_with_perplexity(therapy_area: str, product_name: str, perplexity_key: str, claude_key: str):
+    """Combine Perplexity real-time search with Claude analysis for comprehensive competitive intelligence"""
+    try:
+        # First, get real-time market data from Perplexity
+        market_query = f"Latest market analysis for {therapy_area} therapy area pharmaceutical market 2024-2025 including market size, key players, recent approvals, competitive landscape"
+        if product_name:
+            market_query += f" specifically focusing on {product_name} and competing products"
+            
+        perplexity_result = await search_with_perplexity(market_query, perplexity_key, "competitive_intelligence")
+        
+        # Then enhance with Claude's analytical capabilities
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        chat = LlmChat(
+            api_key=claude_key,
+            session_id=f"enhanced_competitive_{uuid.uuid4()}",
+            system_message="You are a pharmaceutical competitive intelligence expert. Analyze the provided real-time market data and enhance it with structured competitive analysis."
+        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(3072)
+        
+        analysis_prompt = f"""
+        Based on the following real-time market intelligence data, provide a comprehensive competitive analysis:
+        
+        REAL-TIME MARKET DATA:
+        {perplexity_result.content}
+        
+        SOURCES: {', '.join(perplexity_result.citations)}
+        
+        Please structure your analysis with:
+        1. KEY MARKET PLAYERS (with specific company names, products, market shares if available)
+        2. MARKET DYNAMICS (size, growth rate, trends)
+        3. COMPETITIVE POSITIONING (how players differentiate)
+        4. RECENT DEVELOPMENTS (approvals, pipeline, partnerships)
+        5. QUANTITATIVE METRICS (market size, pricing, growth rates)
+        
+        Focus on {therapy_area} therapy area.
+        {f"Emphasize analysis of {product_name} and direct competitors." if product_name else ""}
+        
+        Provide specific company names, drug names, and quantitative data from the real-time sources.
+        """
+        
+        claude_response = await chat.send_message(UserMessage(text=analysis_prompt))
+        
+        # Combine both analyses
+        return {
+            "real_time_intelligence": {
+                "content": perplexity_result.content,
+                "sources": perplexity_result.citations,
+                "search_query": perplexity_result.search_query
+            },
+            "enhanced_analysis": claude_response,
+            "combined_insights": f"REAL-TIME MARKET INTELLIGENCE:\n{perplexity_result.content}\n\nENHANCED COMPETITIVE ANALYSIS:\n{claude_response}",
+            "total_sources": len(perplexity_result.citations),
+            "analysis_type": "Perplexity + Claude Enhanced Intelligence"
+        }
+        
+    except Exception as e:
+        logging.error(f"Enhanced competitive analysis error: {str(e)}")
+        return {
+            "real_time_intelligence": {"content": f"Error: {str(e)}", "sources": [], "search_query": ""},
+            "enhanced_analysis": "Analysis failed due to API issues",
+            "combined_insights": f"Error in enhanced analysis: {str(e)}",
+            "total_sources": 0,
+            "analysis_type": "Error"
+        }
+
 # Web Research Functions
 async def search_clinical_trials(therapy_area: str):
     """Search ClinicalTrials.gov for relevant trials"""
