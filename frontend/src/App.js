@@ -693,18 +693,13 @@ const App = () => {
                         <p className="text-gray-600">Advanced forecasting model for {funnel.therapy_area}</p>
                       </div>
 
-                      {/* Visualization */}
+                      {/* Interactive Funnel Visualization */}
                       {funnel.visualization_data && funnel.visualization_data.funnel_chart && (
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-4">📊 Interactive Funnel Visualization</h4>
-                          <div 
-                            dangerouslySetInnerHTML={{
-                              __html: `<div id="funnel-chart-${funnel.id}"></div>
-                              <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-                              <script>
-                                Plotly.newPlot('funnel-chart-${funnel.id}', ${funnel.visualization_data.funnel_chart});
-                              </script>`
-                            }}
+                        <div className="bg-gray-50 rounded-lg p-4 border">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4">📊 Interactive Patient Flow Funnel</h4>
+                          <PlotlyChart 
+                            data={funnel.visualization_data.funnel_chart} 
+                            id={`funnel-chart-${funnel.id}`}
                           />
                         </div>
                       )}
