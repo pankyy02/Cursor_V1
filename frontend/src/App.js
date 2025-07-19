@@ -56,6 +56,16 @@ const App = () => {
   const [predictiveAnalytics, setPredictiveAnalytics] = useState(null);
   const [phase3Dashboard, setPhase3Dashboard] = useState(null);
 
+  // Phase 4: Authentication & User Management state variables
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+  const [userWorkflows, setUserWorkflows] = useState([]);
+  const [executiveDashboard, setExecutiveDashboard] = useState(null);
+
   const setLoadingState = (operation, isLoading) => {
     setLoadingStates(prev => ({
       ...prev,
