@@ -709,7 +709,7 @@ const App = () => {
 
           {/* Results Panel */}
           <div className="lg:col-span-2">
-            {(analysis || funnel || competitiveData || scenarioModels || clinicalTrials.length > 0 || perplexityResults) && (
+            {(analysis || funnel || competitiveData || scenarioModels || clinicalTrials.length > 0 || perplexityResults || companyIntelligence) && (
               <div className="bg-white rounded-xl shadow-lg">
                 {/* Advanced Tabs */}
                 <div className="border-b border-gray-200">
