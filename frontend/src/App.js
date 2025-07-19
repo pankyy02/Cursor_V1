@@ -805,19 +805,87 @@ const App = () => {
                   {loadingStates.analysis ? 'Analyzing...' : '🔬 Comprehensive Analysis'}
                 </button>
 
-                {analysis && perplexityKey && (
+                {analysis && (
                   <>
-                    <button
-                      onClick={handleEnsembleAnalysis}
-                      disabled={loadingStates.ensemble}
-                      className={`w-full px-4 py-3 rounded-md font-medium transition-colors mb-3 ${
-                        loadingStates.ensemble
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
-                      }`}
-                    >
-                      {loadingStates.ensemble ? 'Analyzing...' : '🤖 Multi-Model Ensemble Analysis'}
-                    </button>
+                    {/* Phase 2: Advanced Analytics Buttons */}
+                    <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                      <h4 className="text-sm font-semibold text-purple-900 mb-3">🚀 Advanced Analytics (Phase 2)</h4>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <button
+                          onClick={handleCreateFinancialModel}
+                          disabled={loadingStates.financial}
+                          className={`px-3 py-2 text-xs rounded font-medium transition-colors ${
+                            loadingStates.financial
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          {loadingStates.financial ? 'Creating...' : '💰 Financial Model'}
+                        </button>
+
+                        {perplexityKey && (
+                          <button
+                            onClick={handleCreateTimeline}
+                            disabled={loadingStates.timeline}
+                            className={`px-3 py-2 text-xs rounded font-medium transition-colors ${
+                              loadingStates.timeline
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-green-600 hover:bg-green-700 text-white'
+                            }`}
+                          >
+                            {loadingStates.timeline ? 'Creating...' : '📅 Timeline View'}
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        {perplexityKey && (
+                          <button
+                            onClick={() => handleCreateTemplate("therapy_specific")}
+                            disabled={loadingStates.template}
+                            className={`px-3 py-2 text-xs rounded font-medium transition-colors ${
+                              loadingStates.template
+                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                : 'bg-orange-600 hover:bg-orange-700 text-white'
+                            }`}
+                          >
+                            {loadingStates.template ? 'Creating...' : '📋 Custom Template'}
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => handleAdvancedVisualization("positioning_map", "competitive")}
+                          disabled={loadingStates.visualization}
+                          className={`px-3 py-2 text-xs rounded font-medium transition-colors ${
+                            loadingStates.visualization
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-purple-600 hover:bg-purple-700 text-white'
+                          }`}
+                        >
+                          {loadingStates.visualization ? 'Creating...' : '🎯 Advanced Viz'}
+                        </button>
+                      </div>
+
+                      <p className="text-xs text-purple-600">Advanced financial modeling, timeline views, custom templates & 2D visualizations</p>
+                    </div>
+
+                    {/* Phase 1: Core Analysis Buttons */}
+                    <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-2">🔬 Core Analysis</h4>
+                      
+                      {perplexityKey && (
+                        <button
+                          onClick={handleEnsembleAnalysis}
+                          disabled={loadingStates.ensemble}
+                          className={`w-full px-4 py-3 rounded-md font-medium transition-colors mb-3 ${
+                            loadingStates.ensemble
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
+                          }`}
+                        >
+                          {loadingStates.ensemble ? 'Analyzing...' : '🤖 Multi-Model Ensemble Analysis'}
+                        </button>
+                      )}
 
                     <button
                       onClick={handleGenerateFunnel}
