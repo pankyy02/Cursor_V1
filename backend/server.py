@@ -3222,6 +3222,179 @@ def generate_excel_export(analysis: dict, funnel: dict = None):
         logging.error(f"Excel generation error: {str(e)}")
         return None
 
+@api_router.post("/financial-model", response_model=FinancialModel)
+async def create_financial_model(request: FinancialModelRequest):
+    """Generate advanced financial model with NPV, IRR, and Monte Carlo analysis"""
+    try:
+        params = {
+            "discount_rate": request.discount_rate,
+            "peak_sales_estimate": request.peak_sales_estimate,
+            "launch_year": request.launch_year,
+            "patent_expiry_year": request.patent_expiry_year,
+            "ramp_up_years": request.ramp_up_years,
+            "monte_carlo_iterations": request.monte_carlo_iterations
+        }
+        
+        financial_model = await generate_financial_model(
+            therapy_area=request.therapy_area,
+            product_name=request.product_name,
+            analysis_id=request.analysis_id,
+            params=params,
+            api_key=request.api_key
+        )
+        
+        # Store in database
+        await db.financial_models.insert_one(financial_model.dict())
+        
+        return financial_model
+        
+    except Exception as e:
+        logger.error(f"Financial model endpoint error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Financial modeling failed: {str(e)}")
+
+@api_router.post("/timeline", response_model=Timeline)
+async def create_timeline(request: TimelineRequest):
+    """Generate interactive milestone timeline"""
+    try:
+        timeline = await generate_timeline(
+            therapy_area=request.therapy_area,
+            product_name=request.product_name,
+            analysis_id=request.analysis_id,
+            include_competitive=request.include_competitive_milestones,
+            api_key=request.api_key
+        )
+        
+        # Store in database
+        await db.timelines.insert_one(timeline.dict())
+        
+        return timeline
+        
+    except Exception as e:
+        logger.error(f"Timeline endpoint error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Timeline generation failed: {str(e)}")
+
+@api_router.post("/custom-template", response_model=CustomTemplate)
+async def create_custom_template(request: TemplateRequest):
+    """Generate custom analysis templates"""
+    try:
+        template = await generate_custom_template(
+            template_type=request.template_type,
+            therapy_area=request.therapy_area or "General",
+            region=request.region or "Global", 
+            api_key=request.api_key
+        )
+        
+        # Store in database
+        await db.custom_templates.insert_one(template.dict())
+        
+        return template
+        
+    except Exception as e:
+        logger.error(f"Template endpoint error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Template generation failed: {str(e)}")
+
+@api_router.get("/templates")
+async def get_available_templates(template_type: Optional[str] = None):
+    """Get available custom templates"""
+    try:
+        query = {"template_type": template_type} if template_type else {}
+        templates = await db.custom_templates.find(query).sort("created_at", -1).limit(20).to_list(20)
+        
+        return {
+            "templates": [
+                {
+                    "id": str(template["_id"]),
+                    "template_type": template["template_type"],
+                    "therapy_area": template.get("therapy_area"),
+                    "region": template.get("region"),
+                    "sections_count": len(template.get("sections", [])),
+                    "created_at": template["created_at"]
+                } for template in templates
+            ],
+            "total_count": len(templates)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/financial-model/{analysis_id}")
+async def get_financial_model(analysis_id: str):
+    """Retrieve financial model for analysis"""
+    try:
+        model = await db.financial_models.find_one({"analysis_id": analysis_id})
+        if not model:
+            raise HTTPException(status_code=404, detail="Financial model not found")
+        return FinancialModel(**model)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/timeline/{analysis_id}")
+async def get_timeline(analysis_id: str):
+    """Retrieve timeline for analysis"""
+    try:
+        timeline = await db.timelines.find_one({"analysis_id": analysis_id})
+        if not timeline:
+            raise HTTPException(status_code=404, detail="Timeline not found")
+        return Timeline(**timeline)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/advanced-visualization")
+async def create_advanced_visualization(
+    visualization_type: str,
+    data_source: str,  # "competitive", "financial", "market"
+    analysis_id: str
+):
+    """Generate advanced 2D visualizations"""
+    try:
+        if data_source == "competitive":
+            # Get competitive data
+            analysis = await db.therapy_analyses.find_one({"id": analysis_id})
+            if not analysis or not analysis.get("competitive_landscape"):
+                raise HTTPException(status_code=404, detail="Competitive data not found")
+            
+            if visualization_type == "positioning_map":
+                chart_data = create_competitive_positioning_map(analysis["competitive_landscape"])
+            else:
+                chart_data = json.dumps({"error": "Unsupported visualization type"})
+        
+        elif data_source == "financial":
+            # Get financial data
+            financial_model = await db.financial_models.find_one({"analysis_id": analysis_id})
+            if not financial_model:
+                raise HTTPException(status_code=404, detail="Financial model not found")
+            
+            if visualization_type == "risk_return":
+                # Get scenario data for risk-return analysis
+                scenarios = financial_model.get("monte_carlo_results", {})
+                chart_data = create_risk_return_scatter({"scenarios": scenarios})
+            else:
+                chart_data = json.dumps({"error": "Unsupported visualization type"})
+        
+        elif data_source == "market":
+            # Get market data
+            analysis = await db.therapy_analyses.find_one({"id": analysis_id})
+            if not analysis:
+                raise HTTPException(status_code=404, detail="Analysis not found")
+            
+            if visualization_type == "market_heatmap":
+                chart_data = create_market_evolution_heatmap(analysis["therapy_area"])
+            else:
+                chart_data = json.dumps({"error": "Unsupported visualization type"})
+        
+        else:
+            raise HTTPException(status_code=400, detail="Invalid data source")
+        
+        return {
+            "visualization_type": visualization_type,
+            "data_source": data_source,
+            "chart_data": chart_data,
+            "generated_at": datetime.utcnow()
+        }
+        
+    except Exception as e:
+        logger.error(f"Advanced visualization error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Visualization generation failed: {str(e)}")
+
 @api_router.post("/ensemble-analysis", response_model=EnsembleResult)
 async def ensemble_analysis_endpoint(request: EnsembleAnalysisRequest):
     """Advanced multi-model AI ensemble analysis"""
