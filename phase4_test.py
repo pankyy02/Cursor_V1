@@ -426,23 +426,30 @@ class Phase4Tester:
             
             invalid_token_rejected = invalid_response.status_code == 401
             
-            # Test with malformed token
+            # Test with malformed token (HTTPBearer should handle this)
             malformed_headers = {"Authorization": "InvalidFormat token"}
             malformed_response = await self.client.get(f"{API_BASE_URL}/auth/profile", headers=malformed_headers)
             
             malformed_token_rejected = malformed_response.status_code in [401, 422]
             
-            # Test with no token
+            # Test with no token (HTTPBearer should handle this)
             no_token_response = await self.client.get(f"{API_BASE_URL}/auth/profile")
             
             no_token_rejected = no_token_response.status_code in [401, 422]
             
-            success = invalid_token_rejected and malformed_token_rejected and no_token_rejected
+            # Test with empty Authorization header
+            empty_headers = {"Authorization": ""}
+            empty_response = await self.client.get(f"{API_BASE_URL}/auth/profile", headers=empty_headers)
+            
+            empty_token_rejected = empty_response.status_code in [401, 422]
+            
+            success = invalid_token_rejected and malformed_token_rejected and no_token_rejected and empty_token_rejected
             
             self.log_test_result("Session Management", success, 
                                f"Invalid token rejected: {invalid_token_rejected}, "
                                f"Malformed token rejected: {malformed_token_rejected}, "
-                               f"No token rejected: {no_token_rejected}")
+                               f"No token rejected: {no_token_rejected}, "
+                               f"Empty token rejected: {empty_token_rejected}")
             return success
             
         except Exception as e:
