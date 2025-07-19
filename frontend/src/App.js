@@ -2220,41 +2220,59 @@ const App = () => {
                       Your comprehensive AI-powered pharmaceutical intelligence solution featuring:
                     </p>
                     
-                    <div className="grid md:grid-cols-2 gap-4 mt-6">
-                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg">
+                    <div className="grid md:grid-cols-3 gap-4 mt-6">
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
                         <div className="text-2xl mb-2">🤖</div>
                         <h4 className="font-semibold text-gray-900">Multi-Model Ensemble</h4>
-                        <p className="text-sm">Claude + Perplexity + Gemini AI analysis with cross-validation</p>
+                        <p className="text-sm">Claude + Perplexity + Gemini AI with cross-validation & confidence scoring</p>
                       </div>
                       
                       <div className="bg-blue-50 p-4 rounded-lg">
-                        <div className="text-2xl mb-2">🔬</div>
-                        <h4 className="font-semibold text-gray-900">Deep Therapy Analysis</h4>
-                        <p className="text-sm">Disease summaries, biomarkers, treatment algorithms, patient journeys</p>
+                        <div className="text-2xl mb-2">💰</div>
+                        <h4 className="font-semibold text-gray-900">Financial Modeling</h4>
+                        <p className="text-sm">NPV, IRR, Monte Carlo simulations & sensitivity analysis</p>
                       </div>
-                      
+
                       <div className="bg-green-50 p-4 rounded-lg">
                         <div className="text-2xl mb-2">📊</div>
                         <h4 className="font-semibold text-gray-900">Advanced Forecasting</h4>
-                        <p className="text-sm">Patient flow funnels, scenario modeling, market projections</p>
+                        <p className="text-sm">Patient flow funnels, scenario modeling & risk assessment</p>
                       </div>
                       
                       <div className="bg-orange-50 p-4 rounded-lg">
                         <div className="text-2xl mb-2">🏢</div>
                         <h4 className="font-semibold text-gray-900">Company Intelligence</h4>
-                        <p className="text-sm">Automated competitive research, investor intelligence, financial metrics</p>
+                        <p className="text-sm">Automated competitive research & financial metrics</p>
                       </div>
                       
                       <div className="bg-purple-50 p-4 rounded-lg">
-                        <div className="text-2xl mb-2">🏆</div>
-                        <h4 className="font-semibold text-gray-900">Competitive Intelligence</h4>
-                        <p className="text-sm">Real-time market players, pipeline analysis, competitive positioning</p>
+                        <div className="text-2xl mb-2">📅</div>
+                        <h4 className="font-semibold text-gray-900">Interactive Timelines</h4>
+                        <p className="text-sm">Milestone tracking, regulatory pathways & competitive events</p>
                       </div>
-                      
+
                       <div className="bg-teal-50 p-4 rounded-lg">
                         <div className="text-2xl mb-2">🔍</div>
-                        <h4 className="font-semibold text-gray-900">Clinical Trials Research</h4>
-                        <p className="text-sm">Real-time clinical trial data, regulatory intelligence</p>
+                        <h4 className="font-semibold text-gray-900">Clinical Research</h4>
+                        <p className="text-sm">Real-time clinical trials data & regulatory intelligence</p>
+                      </div>
+
+                      <div className="bg-yellow-50 p-4 rounded-lg">
+                        <div className="text-2xl mb-2">📋</div>
+                        <h4 className="font-semibold text-gray-900">Custom Templates</h4>
+                        <p className="text-sm">Therapy-specific, regulatory & KOL interview templates</p>
+                      </div>
+
+                      <div className="bg-indigo-50 p-4 rounded-lg">
+                        <div className="text-2xl mb-2">🎯</div>
+                        <h4 className="font-semibold text-gray-900">Advanced Visualizations</h4>
+                        <p className="text-sm">2D positioning maps, heatmaps & risk-return analysis</p>
+                      </div>
+
+                      <div className="bg-pink-50 p-4 rounded-lg">
+                        <div className="text-2xl mb-2">📄</div>
+                        <h4 className="font-semibold text-gray-900">Export & Reporting</h4>
+                        <p className="text-sm">PDF reports, Excel models & presentation-ready outputs</p>
                       </div>
                     </div>
                     
