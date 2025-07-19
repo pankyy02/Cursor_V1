@@ -1453,7 +1453,7 @@ const App = () => {
 
           {/* Results Panel */}
           <div className="lg:col-span-2">
-            {(analysis || funnel || competitiveData || scenarioModels || clinicalTrials.length > 0 || perplexityResults || companyIntelligence || ensembleResult || financialModel || timeline || customTemplate || advancedViz || realWorldEvidence || marketAccessIntel || predictiveAnalytics || phase3Dashboard) && (
+            {(analysis || funnel || competitiveData || scenarioModels || clinicalTrials.length > 0 || perplexityResults || companyIntelligence || ensembleResult || financialModel || timeline || customTemplate || advancedViz || realWorldEvidence || marketAccessIntel || predictiveAnalytics || phase3Dashboard || executiveDashboard) && (
               <div className="bg-white rounded-xl shadow-lg">
                 {/* Advanced Tabs */}
                 <div className="border-b border-gray-200">
