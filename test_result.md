@@ -309,9 +309,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "API Key Integration"
-    - "Data Persistence Validation Logic"
-    - "Frontend Integration Testing"
+    - "Real-World Evidence Analysis (/api/real-world-evidence)"
+    - "Market Access Intelligence (/api/market-access-intelligence)"
+    - "Predictive Analytics (/api/predictive-analytics)"
+    - "Phase 3 Dashboard (/api/phase3-dashboard)"
+    - "Phase 3 Data Retrieval Endpoints"
   stuck_tasks:
     - "Core Analysis Endpoint"
     - "Funnel Generation"
