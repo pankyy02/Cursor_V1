@@ -583,7 +583,7 @@ const App = () => {
                     </button>
 
                     <button
-                      onClick={handleCompetitiveAnalysis}
+                      onClick={handleEnhancedCompetitive}
                       disabled={loadingStates.competitive}
                       className={`w-full px-4 py-3 rounded-md font-medium transition-colors ${
                         loadingStates.competitive
@@ -591,7 +591,7 @@ const App = () => {
                           : 'bg-purple-600 hover:bg-purple-700 text-white'
                       }`}
                     >
-                      {loadingStates.competitive ? 'Analyzing...' : '🏆 Competitive Intelligence'}
+                      {loadingStates.competitive ? 'Analyzing...' : '🏆 Enhanced Competitive Intel'}
                     </button>
 
                     <button
