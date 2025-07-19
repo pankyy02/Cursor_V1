@@ -68,6 +68,7 @@ const App = () => {
       return;
     }
 
+    setLoadingState('analysis', true);
     setIsLoading(true);
     setError("");
     setFunnel(null);
@@ -88,6 +89,7 @@ const App = () => {
       console.error("Analysis error:", error);
       setError(error.response?.data?.detail || "Analysis failed. Please check your API key and try again.");
     } finally {
+      setLoadingState('analysis', false);
       setIsLoading(false);
     }
   };
