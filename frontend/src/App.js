@@ -881,6 +881,71 @@ const App = () => {
     }
   }, [isAuthenticated, currentUser]);
 
+  // Phase 4: OAuth Handler Functions
+  const handleGoogleLogin = async (credentialResponse) => {
+    setLoadingState('login', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/auth/google/token`, {
+        token: credentialResponse.credential
+      });
+
+      const { access_token, user } = response.data;
+      
+      // Store token and user info
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Set authentication state
+      setIsAuthenticated(true);
+      setCurrentUser(user);
+      setShowLoginModal(false);
+      
+      // Configure axios default headers
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      
+    } catch (error) {
+      console.error("Google login error:", error);
+      setError(error.response?.data?.detail || "Google login failed. Please try again.");
+    } finally {
+      setLoadingState('login', false);
+    }
+  };
+
+  const handleAppleLogin = async (response) => {
+    setLoadingState('login', true);
+    setError("");
+
+    try {
+      const authResponse = await axios.post(`${API}/auth/apple/token`, {
+        code: response.authorization?.code,
+        id_token: response.authorization?.id_token,
+        name: response.user?.name
+      });
+
+      const { access_token, user } = authResponse.data;
+      
+      // Store token and user info
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Set authentication state
+      setIsAuthenticated(true);
+      setCurrentUser(user);
+      setShowLoginModal(false);
+      
+      // Configure axios default headers
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      
+    } catch (error) {
+      console.error("Apple login error:", error);
+      setError(error.response?.data?.detail || "Apple login failed. Please try again.");
+    } finally {
+      setLoadingState('login', false);
+    }
+  };
+
   const resetForm = () => {
     setTherapyArea("");
     setProductName("");
