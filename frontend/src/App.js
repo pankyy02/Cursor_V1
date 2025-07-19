@@ -29,6 +29,13 @@ const App = () => {
   const [clinicalTrials, setClinicalTrials] = useState([]);
   const [exportLoading, setExportLoading] = useState(false);
 
+  const setLoadingState = (operation, isLoading) => {
+    setLoadingStates(prev => ({
+      ...prev,
+      [operation]: isLoading
+    }));
+  };
+
   useEffect(() => {
     const testConnection = async () => {
       try {
