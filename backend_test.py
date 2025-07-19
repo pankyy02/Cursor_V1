@@ -35,6 +35,10 @@ class PharmaAPITester:
         self.client = httpx.AsyncClient(timeout=60.0)
         self.analysis_id = None
         self.test_results = {}
+        # Phase 4 test variables
+        self.test_user_id = None
+        self.test_access_token = None
+        self.test_session_id = None
         
     async def __aenter__(self):
         return self
