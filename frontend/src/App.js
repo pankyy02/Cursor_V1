@@ -588,6 +588,26 @@ const App = () => {
                 />
               </div>
 
+              {/* Company Intelligence Button */}
+              {perplexityKey && productName && (
+                <div className="mb-4">
+                  <button
+                    onClick={handleCompanyIntelligence}
+                    disabled={loadingStates.company}
+                    className={`w-full px-4 py-2 rounded-md font-medium transition-colors ${
+                      loadingStates.company
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-orange-600 hover:bg-orange-700 text-white'
+                    }`}
+                  >
+                    {loadingStates.company ? 'Researching...' : '🏢 Company Intelligence'}
+                  </button>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Automated competitive research and investor intelligence
+                  </p>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="space-y-3">
                 <button
