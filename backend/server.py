@@ -4927,8 +4927,12 @@ async def get_rwe_analysis(therapy_area: str, product_name: str = None):
         if not analysis:
             raise HTTPException(status_code=404, detail="RWE analysis not found")
         
-        return RealWorldEvidence(**analysis["rwe_data"])
+        # Convert ObjectIds and return the stored RWE data directly
+        rwe_data = convert_objectid_to_str(analysis["rwe_data"])
+        return rwe_data
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -4948,8 +4952,12 @@ async def get_market_access_analysis(therapy_area: str, product_name: str = None
         if not analysis:
             raise HTTPException(status_code=404, detail="Market access analysis not found")
         
-        return MarketAccessIntelligence(**analysis["market_access_data"])
+        # Convert ObjectIds and return the stored market access data directly
+        market_access_data = convert_objectid_to_str(analysis["market_access_data"])
+        return market_access_data
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -4969,8 +4977,12 @@ async def get_predictive_analysis(therapy_area: str, product_name: str = None):
         if not analysis:
             raise HTTPException(status_code=404, detail="Predictive analysis not found")
         
-        return PredictiveAnalytics(**analysis["predictive_data"])
+        # Convert ObjectIds and return the stored predictive data directly
+        predictive_data = convert_objectid_to_str(analysis["predictive_data"])
+        return predictive_data
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
