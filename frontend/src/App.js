@@ -1662,6 +1662,12 @@ const App = () => {
                     </p>
                     
                     <div className="grid md:grid-cols-2 gap-4 mt-6">
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg">
+                        <div className="text-2xl mb-2">🤖</div>
+                        <h4 className="font-semibold text-gray-900">Multi-Model Ensemble</h4>
+                        <p className="text-sm">Claude + Perplexity + Gemini AI analysis with cross-validation</p>
+                      </div>
+                      
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <div className="text-2xl mb-2">🔬</div>
                         <h4 className="font-semibold text-gray-900">Deep Therapy Analysis</h4>
