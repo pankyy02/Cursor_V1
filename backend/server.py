@@ -561,45 +561,159 @@ async def find_competitive_products(drug_class: str, therapy_area: str, perplexi
         }]
 
 async def generate_company_intelligence(product_name: str, therapy_area: str, perplexity_key: str, include_competitors: bool = True) -> CompanyIntelligence:
-    """Complete company intelligence pipeline"""
+    """Complete company intelligence pipeline using only Perplexity searches"""
     try:
-        # Step 1: Identify parent company
-        company_info = await identify_parent_company(product_name, perplexity_key)
+        error_log = []
         
-        # Step 2: Scrape investor relations data
-        investor_data = await scrape_investor_relations(company_info["website"], company_info["company_name"])
+        # Step 1: Identify parent company using Perplexity
+        try:
+            company_info = await identify_parent_company(product_name, perplexity_key)
+        except Exception as e:
+            error_log.append({"step": "company_identification", "error": str(e)})
+            company_info = {
+                "company_name": "Unknown Company",
+                "website": "",
+                "drug_class": "Unknown Class",
+                "search_content": f"Error: {str(e)}",
+                "sources": []
+            }
         
-        # Step 3: Find competitive products (if requested)
-        competitive_products = []
-        if include_competitors:
-            competitive_products = await find_competitive_products(
-                company_info["drug_class"], 
-                therapy_area or "general", 
+        # Step 2: Get investor relations data using Perplexity (no direct scraping)
+        try:
+            investor_data = await scrape_investor_relations(
+                company_info["company_name"], 
+                company_info["website"], 
                 perplexity_key
             )
+        except Exception as e:
+            error_log.append({"step": "investor_relations", "error": str(e)})
+            investor_data = {
+                "financial_highlights": [],
+                "recent_earnings": [],
+                "pipeline_updates": [],
+                "press_releases": [],
+                "presentation_links": [],
+                "sources_accessed": [],
+                "error": str(e)
+            }
         
-        # Step 4: Get recent developments
-        developments_query = f"Latest news and developments for {product_name} and {company_info['company_name']} in the past 6 months"
-        developments_result = await search_with_perplexity(developments_query, perplexity_key, "recent_developments")
+        # Step 3: Find competitive products using Perplexity
+        competitive_products = []
+        if include_competitors:
+            try:
+                competitive_products = await find_competitive_products(
+                    company_info["drug_class"], 
+                    therapy_area or "general", 
+                    perplexity_key
+                )
+            except Exception as e:
+                error_log.append({"step": "competitive_products", "error": str(e)})
+                competitive_products = [{
+                    'name': 'Error in competitive search',
+                    'description': str(e),
+                    'company': 'Unknown',
+                    'error_type': 'competitive_search_failure'
+                }]
         
+        # Step 4: Get recent developments using Perplexity
         recent_developments = []
-        dev_lines = developments_result.content.split('\n')[:10]  # Limit to 10 lines
-        for line in dev_lines:
-            if line.strip() and len(line.strip()) > 20:
-                recent_developments.append({
-                    "update": line.strip()[:200],
-                    "source": "perplexity_search",
-                    "timestamp": datetime.utcnow().isoformat()
-                })
+        try:
+            developments_query = f"""
+            Latest news, developments, clinical updates, partnerships, and corporate announcements 
+            for {product_name} and {company_info['company_name']} in the past 6 months. 
+            Include FDA approvals, clinical trial results, market expansions, financial results.
+            """
+            developments_result = await search_with_perplexity(developments_query, perplexity_key, "recent_developments")
+            
+            dev_lines = developments_result.content.split('\n')
+            for line in dev_lines:
+                if line.strip() and len(line.strip()) > 20:
+                    # Filter for meaningful updates
+                    if any(keyword in line.lower() for keyword in ['approved', 'announced', 'reported', 'launched', 'partnership', 'results', 'fda', 'trial']):
+                        recent_developments.append({
+                            "update": line.strip()[:200],
+                            "source": "perplexity_developments_search",
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "relevance": "high" if any(term in line.lower() for term in [product_name.lower(), 'fda', 'approved']) else "medium"
+                        })
+                        
+                if len(recent_developments) >= 10:  # Limit to 10 developments
+                    break
+                    
+        except Exception as e:
+            error_log.append({"step": "recent_developments", "error": str(e)})
+            recent_developments = [{
+                "update": f"Error retrieving recent developments: {str(e)}",
+                "source": "error",
+                "timestamp": datetime.utcnow().isoformat(),
+                "error_type": "developments_search_failure"
+            }]
         
-        # Step 5: Extract financial metrics
-        financial_metrics = {
-            "highlights": investor_data.get("financial_highlights", []),
-            "market_position": "To be analyzed",
-            "growth_metrics": "See investor data"
-        }
+        # Step 5: Enhanced financial metrics using Perplexity
+        financial_metrics = {}
+        try:
+            financial_query = f"""
+            {company_info['company_name']} latest financial performance, revenue, market capitalization, 
+            stock performance, quarterly earnings, annual revenue, growth rates, market position in pharmaceutical industry.
+            Include specific numbers and recent financial highlights.
+            """
+            financial_result = await search_with_perplexity(financial_query, perplexity_key, "financial_metrics")
+            
+            # Extract financial data from the search result
+            import re
+            content = financial_result.content
+            
+            # Look for various financial metrics
+            revenue_patterns = [
+                r'revenue.*?\$([0-9.,]+)\s*(million|billion|M|B)',
+                r'\$([0-9.,]+)\s*(million|billion|M|B).*revenue',
+                r'sales.*?\$([0-9.,]+)\s*(million|billion|M|B)'
+            ]
+            
+            market_cap_patterns = [
+                r'market cap.*?\$([0-9.,]+)\s*(million|billion|M|B)',
+                r'market capitalization.*?\$([0-9.,]+)\s*(million|billion|M|B)'
+            ]
+            
+            extracted_revenues = []
+            extracted_market_caps = []
+            
+            for pattern in revenue_patterns:
+                matches = re.findall(pattern, content, re.IGNORECASE)
+                extracted_revenues.extend([f"${match[0]} {match[1]}" for match in matches[:2]])
+                
+            for pattern in market_cap_patterns:
+                matches = re.findall(pattern, content, re.IGNORECASE)
+                extracted_market_caps.extend([f"${match[0]} {match[1]}" for match in matches[:2]])
+            
+            financial_metrics = {
+                "highlights": investor_data.get("financial_highlights", []),
+                "extracted_revenues": extracted_revenues,
+                "extracted_market_caps": extracted_market_caps,
+                "market_position": content[:300] + "..." if content else "No financial data available",
+                "growth_metrics": "See search results and investor data",
+                "search_sources": financial_result.citations,
+                "data_quality": "perplexity_extracted"
+            }
+            
+        except Exception as e:
+            error_log.append({"step": "financial_metrics", "error": str(e)})
+            financial_metrics = {
+                "highlights": investor_data.get("financial_highlights", []),
+                "error": str(e),
+                "error_type": "financial_search_failure"
+            }
         
-        # Step 6: Compile comprehensive intelligence
+        # Step 6: Compile all sources
+        all_sources = []
+        all_sources.extend(company_info.get("sources", []))
+        all_sources.extend(investor_data.get("sources_accessed", []))
+        if 'search_sources' in financial_metrics:
+            all_sources.extend(financial_metrics["search_sources"])
+        # Remove duplicates
+        all_sources = list(set(all_sources))
+        
+        # Step 7: Create comprehensive intelligence object
         intelligence = CompanyIntelligence(
             product_name=product_name,
             parent_company=company_info["company_name"],
@@ -610,24 +724,28 @@ async def generate_company_intelligence(product_name: str, therapy_area: str, pe
             competitive_products=competitive_products,
             financial_metrics=financial_metrics,
             recent_developments=recent_developments,
-            sources_scraped=investor_data.get("sources_accessed", []) + company_info.get("sources", [])
+            sources_scraped=all_sources
         )
+        
+        # Add error logging for debugging
+        if error_log:
+            intelligence.investor_data["error_log"] = error_log
         
         return intelligence
         
     except Exception as e:
         logging.error(f"Company intelligence generation error: {str(e)}")
-        # Return fallback intelligence
+        # Return comprehensive fallback intelligence with error tracking
         return CompanyIntelligence(
             product_name=product_name,
-            parent_company="Unknown Company",
+            parent_company="Error in Company Identification",
             company_website="",
-            market_class="Unknown Class",
-            investor_data={"error": str(e)},
+            market_class="Error in Classification",
+            investor_data={"error": str(e), "error_type": "complete_pipeline_failure"},
             press_releases=[],
-            competitive_products=[],
-            financial_metrics={"error": str(e)},
-            recent_developments=[],
+            competitive_products=[{"name": "Error in competitive analysis", "error": str(e)}],
+            financial_metrics={"error": str(e), "error_type": "complete_pipeline_failure"},
+            recent_developments=[{"update": f"Error in intelligence generation: {str(e)}", "source": "error"}],
             sources_scraped=[]
         )
 
