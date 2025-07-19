@@ -3324,7 +3324,20 @@ class PharmaAPITester:
             ("Company Intelligence - Investor Relations", self.test_company_intelligence_investor_relations),
             ("Company Intelligence - Error Handling", self.test_company_intelligence_error_handling),
             ("Company Intelligence - Data Persistence", self.test_company_intelligence_data_persistence),
-            ("Company Intelligence - Timeout Handling", self.test_company_intelligence_timeout_handling)
+            ("Company Intelligence - Timeout Handling", self.test_company_intelligence_timeout_handling),
+            # Phase 4: OAuth & Authentication Tests (NEW)
+            ("User Registration", self.test_user_registration),
+            ("User Login", self.test_user_login),
+            ("User Profile", self.test_user_profile),
+            ("User Logout", self.test_user_logout),
+            ("Google OAuth Token", self.test_google_oauth_token),
+            ("Apple OAuth Token", self.test_apple_oauth_token),
+            ("Subscription Plans", self.test_subscription_plans),
+            ("Stripe Checkout Session", self.test_stripe_checkout_session),
+            ("Stripe Checkout Status", self.test_stripe_checkout_status),
+            ("Password Hashing Security", self.test_password_hashing_security),
+            ("Session Management", self.test_session_management),
+            ("Database Collections", self.test_database_collections)
         ]
         
         results = {}
