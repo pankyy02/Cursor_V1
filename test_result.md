@@ -309,13 +309,13 @@ metadata:
 
 test_plan:
   current_focus:
+    - "OAuth Integration (/api/auth/google/token, /api/auth/apple/token, /api/auth/google/login)"
     - "User Registration & Authentication (/api/auth/register, /api/auth/login, /api/auth/logout)"
     - "Stripe Payment Integration (/api/payments/checkout/session, /api/payments/checkout/status)"
     - "Subscription Plans (/api/subscriptions/plans)"
-    - "Automated Workflows (/api/workflows)"
-    - "Executive Dashboard (/api/dashboard/executive)"
-    - "User Profile Management (/api/auth/profile)"
-    - "Stripe Webhook Handling (/api/webhook/stripe)"
+    - "Session Management & Security (password hashing, token validation)"
+    - "Database Integration (users, user_sessions, user_profiles, payment_transactions)"
+    - "Frontend OAuth Integration (Google OAuth Provider, Apple Sign-in)"
   stuck_tasks:
     - "Core Analysis Endpoint" 
     - "Funnel Generation"
