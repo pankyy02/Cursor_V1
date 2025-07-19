@@ -828,6 +828,8 @@ class PharmaAPITester:
         except Exception as e:
             self.log_test_result("Perplexity Data Storage", False, f"Exception: {str(e)}")
             return False
+    
+    async def test_visualization_data(self) -> bool:
         """Test Plotly chart data generation"""
         if not self.analysis_id:
             self.log_test_result("Visualization Data", False, "No analysis ID available")
