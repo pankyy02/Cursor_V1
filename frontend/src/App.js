@@ -425,46 +425,50 @@ const App = () => {
                   <>
                     <button
                       onClick={handleGenerateFunnel}
-                      disabled={isLoading}
+                      disabled={loadingStates.funnel}
                       className={`w-full px-4 py-3 rounded-md font-medium transition-colors ${
-                        isLoading 
+                        loadingStates.funnel
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-green-600 hover:bg-green-700 text-white'
                       }`}
                     >
-                      {isLoading ? 'Generating...' : '📊 Generate Forecast Funnel'}
+                      {loadingStates.funnel ? 'Generating...' : '📊 Generate Forecast Funnel'}
                     </button>
 
                     <button
                       onClick={handleCompetitiveAnalysis}
-                      disabled={isLoading}
+                      disabled={loadingStates.competitive}
                       className={`w-full px-4 py-3 rounded-md font-medium transition-colors ${
-                        isLoading 
+                        loadingStates.competitive
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-purple-600 hover:bg-purple-700 text-white'
                       }`}
                     >
-                      {isLoading ? 'Analyzing...' : '🏆 Competitive Intelligence'}
+                      {loadingStates.competitive ? 'Analyzing...' : '🏆 Competitive Intelligence'}
                     </button>
 
                     <button
                       onClick={handleScenarioModeling}
-                      disabled={isLoading}
+                      disabled={loadingStates.scenarios}
                       className={`w-full px-4 py-3 rounded-md font-medium transition-colors ${
-                        isLoading 
+                        loadingStates.scenarios
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                       }`}
                     >
-                      {isLoading ? 'Modeling...' : '🎯 Scenario Modeling'}
+                      {loadingStates.scenarios ? 'Modeling...' : '🎯 Scenario Modeling'}
                     </button>
 
                     <button
                       onClick={handleSearchTrials}
-                      disabled={isLoading}
-                      className="w-full px-4 py-3 rounded-md font-medium transition-colors bg-teal-600 hover:bg-teal-700 text-white"
+                      disabled={loadingStates.trials}
+                      className={`w-full px-4 py-3 rounded-md font-medium transition-colors ${
+                        loadingStates.trials
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-teal-600 hover:bg-teal-700 text-white'
+                      }`}
                     >
-                      🔍 Clinical Trials Research
+                      {loadingStates.trials ? 'Searching...' : '🔍 Clinical Trials Research'}
                     </button>
                   </>
                 )}
