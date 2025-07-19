@@ -1479,12 +1479,20 @@ class PharmaAPITester:
             ("Export Functionality", self.test_export_functionality),
             ("Data Persistence", self.test_data_persistence),
             ("Visualization Data", self.test_visualization_data),
-            # New Perplexity Integration Tests
+            # Perplexity Integration Tests
             ("Perplexity Search Endpoint", self.test_perplexity_search_endpoint),
             ("Perplexity Pharmaceutical Search", self.test_perplexity_pharmaceutical_search),
             ("Enhanced Competitive Analysis", self.test_enhanced_competitive_analysis),
             ("Perplexity Error Handling", self.test_perplexity_error_handling),
-            ("Perplexity Data Storage", self.test_perplexity_data_storage)
+            ("Perplexity Data Storage", self.test_perplexity_data_storage),
+            # Company Intelligence Engine Tests (NEW)
+            ("Company Intelligence - Qinlock", self.test_company_intelligence_qinlock),
+            ("Company Intelligence - Keytruda", self.test_company_intelligence_keytruda),
+            ("Company Intelligence - Competitive Discovery", self.test_company_intelligence_competitive_discovery),
+            ("Company Intelligence - Investor Relations", self.test_company_intelligence_investor_relations),
+            ("Company Intelligence - Error Handling", self.test_company_intelligence_error_handling),
+            ("Company Intelligence - Data Persistence", self.test_company_intelligence_data_persistence),
+            ("Company Intelligence - Timeout Handling", self.test_company_intelligence_timeout_handling)
         ]
         
         results = {}
