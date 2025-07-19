@@ -36,6 +36,11 @@ from openpyxl.styles import Font, Alignment, PatternFill
 # Phase 4: Stripe Integration
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 
+# Phase 4: OAuth Integration
+from authlib.integrations.starlette_client import OAuth
+from authlib.jose import jwt
+import httpx
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
