@@ -5806,6 +5806,11 @@ async def get_user_profile(current_user: User = Depends(get_current_user)):
             # Create default profile if doesn't exist
             profile = UserProfile(user_id=current_user.id)
             await db.user_profiles.insert_one(profile.dict())
+            profile = profile.dict()
+        else:
+            # Remove MongoDB ObjectId and convert to dict
+            if "_id" in profile:
+                del profile["_id"]
         
         return {
             "user": current_user.dict(),
