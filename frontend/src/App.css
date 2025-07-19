@@ -1,38 +1,178 @@
+/* Tailwind CSS directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for the pharma app */
 .App {
-    text-align: center;
+  min-height: 100vh;
 }
 
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Loading animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+/* Custom scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-.App-link {
-    color: #61dafb;
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+/* Professional medical styling */
+.medical-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.medical-text {
+  line-height: 1.7;
+  font-size: 14px;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Button animations */
+.btn-primary {
+  background: linear-gradient(45deg, #3b82f6, #1e40af);
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, #1e40af, #1e3a8a);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: linear-gradient(45deg, #10b981, #059669);
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(45deg, #059669, #047857);
+  transform: translateY(-1px);
+}
+
+/* Text area and input focus states */
+input:focus, textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Responsive typography */
+@media (max-width: 768px) {
+  .text-4xl {
+    font-size: 2.5rem;
+  }
+  
+  .text-xl {
+    font-size: 1.1rem;
+  }
+}
+
+/* Section spacing */
+.section-spacing {
+  padding: 2rem 0;
+}
+
+/* Medical icons styling */
+.medical-icon {
+  color: #3b82f6;
+  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.2));
+}
+
+/* Content formatting for medical text */
+.medical-content {
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+.medical-content h4 {
+  color: #1f2937;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.medical-content p {
+  margin-bottom: 1rem;
+  color: #4b5563;
+}
+
+/* Funnel stage styling */
+.funnel-stage {
+  position: relative;
+  background: linear-gradient(to right, #f8fafc, #ffffff);
+  border-left: 4px solid #3b82f6;
+  transition: all 0.3s ease;
+}
+
+.funnel-stage:hover {
+  border-left-color: #1e40af;
+  background: linear-gradient(to right, #eff6ff, #f8fafc);
+}
+
+/* Tab styling */
+.tab-active {
+  color: #3b82f6;
+  border-bottom: 2px solid #3b82f6;
+  background-color: #eff6ff;
+}
+
+.tab-inactive {
+  color: #6b7280;
+  transition: color 0.2s ease;
+}
+
+.tab-inactive:hover {
+  color: #374151;
+}
+
+/* Error and success states */
+.error-state {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.success-state {
+  background-color: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #16a34a;
+}
+
+/* Loading states */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
