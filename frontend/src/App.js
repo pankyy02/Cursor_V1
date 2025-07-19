@@ -32,6 +32,7 @@ const App = () => {
   const [perplexityKey, setPerplexityKey] = useState("");
   const [realTimeSearch, setRealTimeSearch] = useState("");
   const [perplexityResults, setPerplexityResults] = useState(null);
+  const [companyIntelligence, setCompanyIntelligence] = useState(null);
 
   const setLoadingState = (operation, isLoading) => {
     setLoadingStates(prev => ({
