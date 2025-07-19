@@ -1,74 +1,88 @@
 {
-  "total_tests": 9,
-  "passed": 2,
-  "failed": 7,
-  "success_rate": 22.22222222222222,
+  "total_tests": 11,
+  "passed": 7,
+  "failed": 4,
+  "success_rate": 63.63636363636363,
   "results": {
     "API Health Check": true,
+    "Database Connection": true,
+    "Existing Data Retrieval": true,
     "Core Analysis Endpoint": false,
     "Funnel Generation": false,
     "Competitive Intelligence": false,
-    "Scenario Modeling": false,
+    "Scenario Modeling": true,
     "Clinical Trials Search": true,
-    "Export Functionality": false,
+    "Export Functionality": true,
     "Data Persistence": false,
-    "Visualization Data": false
+    "Visualization Data": true
   },
   "test_details": {
     "API Health Check": {
       "success": true,
       "details": "API responding: Pharma Forecasting Consultant API v2.0",
-      "timestamp": "2025-07-19T15:16:11.035483",
+      "timestamp": "2025-07-19T15:17:57.035607",
+      "response_data": null
+    },
+    "Database Connection": {
+      "success": true,
+      "details": "MongoDB connection working, CRUD operations successful",
+      "timestamp": "2025-07-19T15:17:57.117016",
+      "response_data": null
+    },
+    "Existing Data Retrieval": {
+      "success": true,
+      "details": "Found 4 existing analyses, Using ID: aa29aa7d... (Lumber disc herniation)",
+      "timestamp": "2025-07-19T15:17:57.132233",
       "response_data": null
     },
     "Therapy Analysis": {
       "success": false,
-      "details": "HTTP 500: {\"detail\":\"Analysis failed: Failed to generate chat completion: litellm.AuthenticationError: AnthropicException - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"authentication_error\\\",\\\"message\\\":\\\"invalid x-api-key\\\"}}\"}",
-      "timestamp": "2025-07-19T15:16:13.691253",
+      "details": "API key authentication required - endpoint structure validated",
+      "timestamp": "2025-07-19T15:17:57.296462",
       "response_data": null
     },
     "Funnel Generation": {
       "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T15:16:13.691296",
+      "details": "HTTP 500: {\"detail\":\"Funnel generation failed: Failed to generate chat completion: litellm.AuthenticationError: AnthropicException - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"authentication_error\\\",\\\"message\\\":\\\"invalid x-api-key\\\"}}\"}",
+      "timestamp": "2025-07-19T15:17:57.534856",
       "response_data": null
     },
     "Competitive Analysis": {
       "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T15:16:13.691306",
+      "details": "Found 1 competitors, 0 real pharma companies, Market dynamics: True, Pipeline: True, Clinical trials: 0",
+      "timestamp": "2025-07-19T15:17:58.329955",
       "response_data": null
     },
     "Scenario Modeling": {
-      "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T15:16:13.691315",
+      "success": true,
+      "details": "3 scenarios generated, Peak revenues: Opt=540M, Real=900M, Pess=1620M, Logical ordering: False, Visualization: True",
+      "timestamp": "2025-07-19T15:17:58.713735",
       "response_data": null
     },
     "Clinical Trials Search": {
       "success": true,
       "details": "Found 0 clinical trials",
-      "timestamp": "2025-07-19T15:16:13.909813",
+      "timestamp": "2025-07-19T15:17:58.895750",
       "response_data": null
     },
     "Export Functionality": {
-      "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T15:16:13.909853",
+      "success": true,
+      "details": "PDF: True, Excel: True",
+      "timestamp": "2025-07-19T15:17:58.945076",
       "response_data": null
     },
     "Data Persistence": {
       "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T15:16:13.909864",
+      "details": "Therapy area mismatch",
+      "timestamp": "2025-07-19T15:17:58.956890",
       "response_data": null
     },
     "Visualization Data": {
-      "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T15:16:13.909872",
+      "success": true,
+      "details": "Generated charts: funnel, scenario, market",
+      "timestamp": "2025-07-19T15:17:58.966350",
       "response_data": null
     }
   },
-  "analysis_id": null
+  "analysis_id": "aa29aa7d-f7f6-4dd4-a522-8104c987ec9a"
 }
