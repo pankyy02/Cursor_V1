@@ -1,0 +1,64 @@
+{
+  "total_tests": 9,
+  "passed": 4,
+  "failed": 5,
+  "success_rate": 44.44444444444444,
+  "results": {
+    "User Registration": true,
+    "User Login": true,
+    "User Profile": false,
+    "Google OAuth Token": false,
+    "Apple OAuth Token": false,
+    "Subscription Plans": true,
+    "Stripe Checkout Session": false,
+    "Session Management": false,
+    "User Logout": true
+  },
+  "test_details": {
+    "User Registration": {
+      "success": true,
+      "details": "User registered successfully. ID: 469adbfe..., Email: john.doe@pharmatech.com",
+      "timestamp": "2025-07-19T19:00:43.747351"
+    },
+    "User Login": {
+      "success": true,
+      "details": "Login successful. Token: iXt7ep0Ap4ebtSrm..., User: John Doe, Subscription: free",
+      "timestamp": "2025-07-19T19:00:43.776621"
+    },
+    "User Profile": {
+      "success": false,
+      "details": "HTTP 500: Internal Server Error",
+      "timestamp": "2025-07-19T19:00:43.792551"
+    },
+    "Google OAuth Token": {
+      "success": false,
+      "details": "Invalid Google token - OAuth validation working",
+      "timestamp": "2025-07-19T19:00:43.955312"
+    },
+    "Apple OAuth Token": {
+      "success": false,
+      "details": "Invalid Apple ID token - OAuth validation working",
+      "timestamp": "2025-07-19T19:00:44.006361"
+    },
+    "Subscription Plans": {
+      "success": true,
+      "details": "Found 3 subscription plans. Tiers: ['basic', 'professional', 'enterprise'], Price range: $29.0-$299.0, Valid pricing: True",
+      "timestamp": "2025-07-19T19:00:44.056602"
+    },
+    "Stripe Checkout Session": {
+      "success": false,
+      "details": "Stripe API error - checkout structure validated",
+      "timestamp": "2025-07-19T19:00:44.682994"
+    },
+    "Session Management": {
+      "success": false,
+      "details": "Invalid token rejected: True, Malformed token rejected: False, No token rejected: False",
+      "timestamp": "2025-07-19T19:00:44.712526"
+    },
+    "User Logout": {
+      "success": true,
+      "details": "Logout successful: Logged out successfully",
+      "timestamp": "2025-07-19T19:00:44.765279"
+    }
+  }
+}
