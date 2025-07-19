@@ -1880,6 +1880,722 @@ class PharmaAPITester:
             self.log_test_result("Visualization Data", False, f"Exception: {str(e)}")
             return False
     
+    # ========================================
+    # PHASE 4: USER MANAGEMENT, AUTHENTICATION & PAYMENT INTEGRATION TESTS
+    # ========================================
+    
+    async def test_user_registration(self) -> bool:
+        """Test user registration endpoint"""
+        try:
+            payload = {
+                "email": "test@pharma.com",
+                "password": "testpass123",
+                "first_name": "Test",
+                "last_name": "User",
+                "company": "Pharma Test Corp",
+                "role": "Analyst"
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/auth/register", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["user_id", "email", "first_name", "last_name", "subscription_tier"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("User Registration", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate email matches
+                if data.get("email") != payload["email"]:
+                    self.log_test_result("User Registration", False, 
+                                       f"Email mismatch: {data.get('email')} != {payload['email']}")
+                    return False
+                
+                # Validate default subscription tier
+                if data.get("subscription_tier") != "free":
+                    self.log_test_result("User Registration", False, 
+                                       f"Default subscription tier should be 'free', got: {data.get('subscription_tier')}")
+                    return False
+                
+                # Store user_id for subsequent tests
+                self.test_user_id = data.get("user_id")
+                
+                self.log_test_result("User Registration", True, 
+                                   f"User registered successfully. ID: {self.test_user_id[:8]}..., "
+                                   f"Email: {data.get('email')}, "
+                                   f"Subscription: {data.get('subscription_tier')}")
+                return True
+                
+            elif response.status_code == 400:
+                # Check if it's a duplicate email error (acceptable)
+                error_text = response.text.lower()
+                if "email" in error_text and ("exists" in error_text or "duplicate" in error_text):
+                    self.log_test_result("User Registration", True, 
+                                       "Duplicate email handling working correctly")
+                    return True
+                else:
+                    self.log_test_result("User Registration", False, 
+                                       f"Bad request: {response.text}")
+                    return False
+            else:
+                self.log_test_result("User Registration", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("User Registration", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_user_login(self) -> bool:
+        """Test user login endpoint"""
+        try:
+            payload = {
+                "email": "test@pharma.com",
+                "password": "testpass123"
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/auth/login", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["session_token", "user", "expires_at"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("User Login", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate session token
+                session_token = data.get("session_token")
+                if not session_token or len(session_token) < 20:
+                    self.log_test_result("User Login", False, 
+                                       f"Invalid session token: {session_token}")
+                    return False
+                
+                # Validate user data
+                user_data = data.get("user", {})
+                if user_data.get("email") != payload["email"]:
+                    self.log_test_result("User Login", False, 
+                                       f"User email mismatch: {user_data.get('email')}")
+                    return False
+                
+                # Validate expires_at
+                expires_at = data.get("expires_at")
+                if not expires_at:
+                    self.log_test_result("User Login", False, "Missing expires_at field")
+                    return False
+                
+                # Store session token for subsequent tests
+                self.test_session_token = session_token
+                self.test_user_data = user_data
+                
+                self.log_test_result("User Login", True, 
+                                   f"Login successful. Token: {session_token[:8]}..., "
+                                   f"User: {user_data.get('email')}, "
+                                   f"Expires: {expires_at}")
+                return True
+                
+            elif response.status_code == 401:
+                # Check if it's proper authentication error
+                self.log_test_result("User Login", False, 
+                                   "Authentication failed - user may not exist or wrong password")
+                return False
+            else:
+                self.log_test_result("User Login", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("User Login", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_user_profile(self) -> bool:
+        """Test user profile retrieval endpoint"""
+        if not hasattr(self, 'test_session_token'):
+            self.log_test_result("User Profile", False, "No session token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.test_session_token}"}
+            response = await self.client.get(f"{API_BASE_URL}/auth/profile", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["id", "email", "first_name", "last_name", "subscription_tier"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("User Profile", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate email matches login
+                if hasattr(self, 'test_user_data') and data.get("email") != self.test_user_data.get("email"):
+                    self.log_test_result("User Profile", False, 
+                                       f"Email mismatch with login data")
+                    return False
+                
+                # Check for additional profile fields
+                has_company = bool(data.get("company"))
+                has_role = bool(data.get("role"))
+                has_api_usage = "api_usage" in data
+                has_created_at = bool(data.get("created_at"))
+                
+                self.log_test_result("User Profile", True, 
+                                   f"Profile retrieved successfully. "
+                                   f"Email: {data.get('email')}, "
+                                   f"Subscription: {data.get('subscription_tier')}, "
+                                   f"Company: {has_company}, Role: {has_role}, "
+                                   f"API usage tracking: {has_api_usage}")
+                return True
+                
+            elif response.status_code == 401:
+                self.log_test_result("User Profile", False, 
+                                   "Authentication failed - invalid session token")
+                return False
+            else:
+                self.log_test_result("User Profile", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("User Profile", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_user_logout(self) -> bool:
+        """Test user logout endpoint"""
+        if not hasattr(self, 'test_session_token'):
+            self.log_test_result("User Logout", False, "No session token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.test_session_token}"}
+            response = await self.client.post(f"{API_BASE_URL}/auth/logout", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response
+                if data.get("message") and "logout" in data.get("message").lower():
+                    # Test that session is invalidated by trying to access profile
+                    profile_response = await self.client.get(f"{API_BASE_URL}/auth/profile", headers=headers)
+                    
+                    if profile_response.status_code == 401:
+                        self.log_test_result("User Logout", True, 
+                                           "Logout successful and session invalidated")
+                        return True
+                    else:
+                        self.log_test_result("User Logout", False, 
+                                           "Logout successful but session not invalidated")
+                        return False
+                else:
+                    self.log_test_result("User Logout", False, 
+                                       f"Invalid logout response: {data}")
+                    return False
+                    
+            elif response.status_code == 401:
+                self.log_test_result("User Logout", False, 
+                                   "Authentication failed - session may already be invalid")
+                return False
+            else:
+                self.log_test_result("User Logout", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("User Logout", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_subscription_plans(self) -> bool:
+        """Test subscription plans endpoint"""
+        try:
+            response = await self.client.get(f"{API_BASE_URL}/subscriptions/plans")
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Should return list of plans
+                if not isinstance(data, list):
+                    self.log_test_result("Subscription Plans", False, 
+                                       f"Expected list, got: {type(data)}")
+                    return False
+                
+                if len(data) < 3:
+                    self.log_test_result("Subscription Plans", False, 
+                                       f"Expected at least 3 plans, got: {len(data)}")
+                    return False
+                
+                # Validate plan structure
+                required_plan_fields = ["id", "name", "price", "features", "api_limits", "description"]
+                plan_names = []
+                plan_prices = []
+                
+                for plan in data:
+                    missing_fields = [field for field in required_plan_fields if field not in plan]
+                    if missing_fields:
+                        self.log_test_result("Subscription Plans", False, 
+                                           f"Plan missing fields: {missing_fields}")
+                        return False
+                    
+                    plan_names.append(plan.get("name", ""))
+                    plan_prices.append(plan.get("price", 0))
+                    
+                    # Validate features and api_limits are lists/dicts
+                    if not isinstance(plan.get("features"), list):
+                        self.log_test_result("Subscription Plans", False, 
+                                           f"Plan features should be list: {plan.get('id')}")
+                        return False
+                    
+                    if not isinstance(plan.get("api_limits"), dict):
+                        self.log_test_result("Subscription Plans", False, 
+                                           f"Plan api_limits should be dict: {plan.get('id')}")
+                        return False
+                
+                # Check for expected plan tiers
+                expected_plans = ["basic", "professional", "enterprise"]
+                found_plans = [plan.get("id", "").lower() for plan in data]
+                missing_plans = [plan for plan in expected_plans if plan not in found_plans]
+                
+                # Check pricing structure (should be ascending)
+                sorted_prices = sorted(plan_prices)
+                price_order_correct = plan_prices == sorted_prices
+                
+                success = len(missing_plans) == 0
+                
+                self.log_test_result("Subscription Plans", success, 
+                                   f"Found {len(data)} plans: {', '.join(plan_names)}, "
+                                   f"Prices: ${', $'.join(map(str, plan_prices))}, "
+                                   f"Missing plans: {missing_plans}, "
+                                   f"Price order correct: {price_order_correct}")
+                return success
+                
+            else:
+                self.log_test_result("Subscription Plans", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Subscription Plans", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_stripe_checkout_session(self) -> bool:
+        """Test Stripe checkout session creation"""
+        try:
+            payload = {
+                "price_id": "price_basic_monthly",
+                "success_url": "https://example.com/success",
+                "cancel_url": "https://example.com/cancel"
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/payments/checkout/session", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["session_id", "checkout_url", "payment_status"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("Stripe Checkout Session", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate session_id format
+                session_id = data.get("session_id")
+                if not session_id or not session_id.startswith("cs_"):
+                    self.log_test_result("Stripe Checkout Session", False, 
+                                       f"Invalid session ID format: {session_id}")
+                    return False
+                
+                # Validate checkout_url
+                checkout_url = data.get("checkout_url")
+                if not checkout_url or "checkout.stripe.com" not in checkout_url:
+                    self.log_test_result("Stripe Checkout Session", False, 
+                                       f"Invalid checkout URL: {checkout_url}")
+                    return False
+                
+                # Store session_id for status test
+                self.test_stripe_session_id = session_id
+                
+                self.log_test_result("Stripe Checkout Session", True, 
+                                   f"Checkout session created successfully. "
+                                   f"Session ID: {session_id[:15]}..., "
+                                   f"Status: {data.get('payment_status')}")
+                return True
+                
+            elif response.status_code == 500:
+                # Check if it's Stripe API key error
+                error_text = response.text.lower()
+                if "stripe" in error_text and ("api" in error_text or "key" in error_text):
+                    self.log_test_result("Stripe Checkout Session", False, 
+                                       "Stripe API key authentication required - endpoint structure validated")
+                    return False
+                else:
+                    self.log_test_result("Stripe Checkout Session", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Stripe Checkout Session", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Stripe Checkout Session", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_stripe_checkout_status(self) -> bool:
+        """Test Stripe checkout status retrieval"""
+        if not hasattr(self, 'test_stripe_session_id'):
+            # Create a test session ID for status testing
+            test_session_id = "cs_test_session_id_for_status_testing"
+        else:
+            test_session_id = self.test_stripe_session_id
+            
+        try:
+            response = await self.client.get(f"{API_BASE_URL}/payments/checkout/status/{test_session_id}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["session_id", "payment_status", "customer_email"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("Stripe Checkout Status", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate session_id matches
+                if data.get("session_id") != test_session_id:
+                    self.log_test_result("Stripe Checkout Status", False, 
+                                       f"Session ID mismatch: {data.get('session_id')} != {test_session_id}")
+                    return False
+                
+                # Validate payment status
+                payment_status = data.get("payment_status")
+                valid_statuses = ["unpaid", "paid", "no_payment_required", "expired"]
+                if payment_status not in valid_statuses:
+                    self.log_test_result("Stripe Checkout Status", False, 
+                                       f"Invalid payment status: {payment_status}")
+                    return False
+                
+                # Check for additional fields
+                has_amount = "amount_total" in data
+                has_currency = "currency" in data
+                has_created = "created" in data
+                
+                self.log_test_result("Stripe Checkout Status", True, 
+                                   f"Status retrieved successfully. "
+                                   f"Session: {test_session_id[:15]}..., "
+                                   f"Status: {payment_status}, "
+                                   f"Email: {data.get('customer_email', 'N/A')}, "
+                                   f"Amount: {has_amount}, Currency: {has_currency}")
+                return True
+                
+            elif response.status_code == 404:
+                # Session not found - acceptable for test session
+                self.log_test_result("Stripe Checkout Status", True, 
+                                   "Proper 404 response for non-existent session")
+                return True
+            elif response.status_code == 500:
+                # Check if it's Stripe API key error
+                error_text = response.text.lower()
+                if "stripe" in error_text and ("api" in error_text or "key" in error_text):
+                    self.log_test_result("Stripe Checkout Status", False, 
+                                       "Stripe API key authentication required - endpoint structure validated")
+                    return False
+                else:
+                    self.log_test_result("Stripe Checkout Status", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Stripe Checkout Status", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Stripe Checkout Status", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_stripe_webhook(self) -> bool:
+        """Test Stripe webhook endpoint"""
+        try:
+            # Simulate a Stripe webhook payload
+            payload = {
+                "id": "evt_test_webhook",
+                "object": "event",
+                "type": "checkout.session.completed",
+                "data": {
+                    "object": {
+                        "id": "cs_test_session_completed",
+                        "payment_status": "paid",
+                        "customer_email": "test@pharma.com",
+                        "amount_total": 2900,
+                        "currency": "usd"
+                    }
+                }
+            }
+            
+            # Stripe webhooks require specific headers
+            headers = {
+                "Stripe-Signature": "t=1234567890,v1=test_signature",
+                "Content-Type": "application/json"
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/webhook/stripe", 
+                                            json=payload, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response
+                if data.get("status") == "success":
+                    self.log_test_result("Stripe Webhook", True, 
+                                       f"Webhook processed successfully. "
+                                       f"Event: {payload['type']}, "
+                                       f"Session: {payload['data']['object']['id']}")
+                    return True
+                else:
+                    self.log_test_result("Stripe Webhook", False, 
+                                       f"Webhook processing failed: {data}")
+                    return False
+                    
+            elif response.status_code == 400:
+                # Check if it's signature validation error (expected with test signature)
+                error_text = response.text.lower()
+                if "signature" in error_text or "webhook" in error_text:
+                    self.log_test_result("Stripe Webhook", True, 
+                                       "Webhook signature validation working correctly")
+                    return True
+                else:
+                    self.log_test_result("Stripe Webhook", False, 
+                                       f"Bad request: {response.text}")
+                    return False
+            elif response.status_code == 500:
+                # Check if it's configuration error
+                error_text = response.text.lower()
+                if "stripe" in error_text and ("endpoint" in error_text or "secret" in error_text):
+                    self.log_test_result("Stripe Webhook", False, 
+                                       "Stripe webhook endpoint secret required - endpoint structure validated")
+                    return False
+                else:
+                    self.log_test_result("Stripe Webhook", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Stripe Webhook", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Stripe Webhook", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_automated_workflows(self) -> bool:
+        """Test automated workflows endpoint"""
+        if not hasattr(self, 'test_session_token'):
+            self.log_test_result("Automated Workflows", False, "No session token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.test_session_token}"}
+            
+            # Test GET workflows (list)
+            response = await self.client.get(f"{API_BASE_URL}/workflows", headers=headers)
+            
+            if response.status_code == 200:
+                workflows = response.json()
+                
+                if not isinstance(workflows, list):
+                    self.log_test_result("Automated Workflows", False, 
+                                       f"Expected list, got: {type(workflows)}")
+                    return False
+                
+                # Test POST workflow (create)
+                workflow_payload = {
+                    "name": "Test Automated Analysis",
+                    "description": "Automated GIST analysis workflow",
+                    "workflow_type": "scheduled_analysis",
+                    "schedule": {
+                        "frequency": "weekly",
+                        "day_of_week": "monday",
+                        "time": "09:00"
+                    },
+                    "parameters": {
+                        "therapy_area": "GIST",
+                        "analysis_type": "comprehensive"
+                    }
+                }
+                
+                create_response = await self.client.post(f"{API_BASE_URL}/workflows", 
+                                                       json=workflow_payload, headers=headers)
+                
+                if create_response.status_code == 200:
+                    created_workflow = create_response.json()
+                    
+                    # Validate created workflow structure
+                    required_fields = ["id", "name", "workflow_type", "schedule", "parameters", "is_active"]
+                    missing_fields = [field for field in required_fields if field not in created_workflow]
+                    
+                    if missing_fields:
+                        self.log_test_result("Automated Workflows", False, 
+                                           f"Created workflow missing fields: {missing_fields}")
+                        return False
+                    
+                    # Validate workflow data
+                    if created_workflow.get("name") != workflow_payload["name"]:
+                        self.log_test_result("Automated Workflows", False, 
+                                           f"Workflow name mismatch")
+                        return False
+                    
+                    workflow_id = created_workflow.get("id")
+                    
+                    self.log_test_result("Automated Workflows", True, 
+                                       f"Workflows endpoint working. "
+                                       f"Existing workflows: {len(workflows)}, "
+                                       f"Created workflow: {workflow_id[:8]}..., "
+                                       f"Type: {created_workflow.get('workflow_type')}")
+                    return True
+                    
+                elif create_response.status_code == 401:
+                    self.log_test_result("Automated Workflows", False, 
+                                       "Authentication failed for workflow creation")
+                    return False
+                elif create_response.status_code == 403:
+                    # Check if it's subscription tier restriction
+                    error_text = create_response.text.lower()
+                    if "subscription" in error_text or "tier" in error_text or "enterprise" in error_text:
+                        self.log_test_result("Automated Workflows", True, 
+                                           "Workflow creation requires enterprise subscription - access control working")
+                        return True
+                    else:
+                        self.log_test_result("Automated Workflows", False, 
+                                           f"Forbidden: {create_response.text}")
+                        return False
+                else:
+                    self.log_test_result("Automated Workflows", False, 
+                                       f"Workflow creation failed: {create_response.status_code}")
+                    return False
+                    
+            elif response.status_code == 401:
+                self.log_test_result("Automated Workflows", False, 
+                                   "Authentication failed for workflow listing")
+                return False
+            else:
+                self.log_test_result("Automated Workflows", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Automated Workflows", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_executive_dashboard(self) -> bool:
+        """Test executive dashboard endpoint"""
+        if not hasattr(self, 'test_session_token'):
+            self.log_test_result("Executive Dashboard", False, "No session token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.test_session_token}"}
+            response = await self.client.get(f"{API_BASE_URL}/dashboard/executive", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_sections = ["summary", "recent_activity", "portfolio_overview", "key_metrics"]
+                missing_sections = [section for section in required_sections if section not in data]
+                
+                if missing_sections:
+                    self.log_test_result("Executive Dashboard", False, 
+                                       f"Missing required sections: {missing_sections}")
+                    return False
+                
+                # Validate summary section
+                summary = data.get("summary", {})
+                required_summary_fields = ["total_analyses", "active_workflows", "subscription_tier"]
+                missing_summary = [field for field in required_summary_fields if field not in summary]
+                
+                if missing_summary:
+                    self.log_test_result("Executive Dashboard", False, 
+                                       f"Missing summary fields: {missing_summary}")
+                    return False
+                
+                # Validate recent activity
+                recent_activity = data.get("recent_activity", [])
+                if not isinstance(recent_activity, list):
+                    self.log_test_result("Executive Dashboard", False, 
+                                       f"Recent activity should be list, got: {type(recent_activity)}")
+                    return False
+                
+                # Validate portfolio overview
+                portfolio = data.get("portfolio_overview", {})
+                if not isinstance(portfolio, dict):
+                    self.log_test_result("Executive Dashboard", False, 
+                                       f"Portfolio overview should be dict, got: {type(portfolio)}")
+                    return False
+                
+                # Validate key metrics
+                key_metrics = data.get("key_metrics", {})
+                if not isinstance(key_metrics, dict):
+                    self.log_test_result("Executive Dashboard", False, 
+                                       f"Key metrics should be dict, got: {type(key_metrics)}")
+                    return False
+                
+                # Check for visualization data
+                has_charts = "charts" in data
+                has_trends = "trends" in data
+                
+                total_analyses = summary.get("total_analyses", 0)
+                active_workflows = summary.get("active_workflows", 0)
+                subscription_tier = summary.get("subscription_tier", "unknown")
+                
+                self.log_test_result("Executive Dashboard", True, 
+                                   f"Dashboard data retrieved successfully. "
+                                   f"Total analyses: {total_analyses}, "
+                                   f"Active workflows: {active_workflows}, "
+                                   f"Subscription: {subscription_tier}, "
+                                   f"Recent activities: {len(recent_activity)}, "
+                                   f"Charts: {has_charts}, Trends: {has_trends}")
+                return True
+                
+            elif response.status_code == 401:
+                self.log_test_result("Executive Dashboard", False, 
+                                   "Authentication failed for executive dashboard")
+                return False
+            elif response.status_code == 403:
+                # Check if it's subscription tier restriction
+                error_text = response.text.lower()
+                if "subscription" in error_text or "tier" in error_text or "enterprise" in error_text:
+                    self.log_test_result("Executive Dashboard", True, 
+                                       "Executive dashboard requires enterprise subscription - access control working")
+                    return True
+                else:
+                    self.log_test_result("Executive Dashboard", False, 
+                                       f"Forbidden: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Executive Dashboard", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Executive Dashboard", False, f"Exception: {str(e)}")
+            return False
+    
     async def run_all_tests(self) -> Dict[str, Any]:
         """Run all backend tests in sequence"""
         print(f"\n🧪 Starting Pharma Intelligence Platform Backend Tests")
