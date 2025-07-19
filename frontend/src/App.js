@@ -36,6 +36,50 @@ const App = () => {
     }));
   };
 
+  // Component for rendering Plotly charts
+  const PlotlyChart = ({ data, id }) => {
+    const chartRef = useRef(null);
+    
+    useEffect(() => {
+      if (data && chartRef.current && window.Plotly) {
+        try {
+          const plotData = JSON.parse(data);
+          window.Plotly.newPlot(chartRef.current, plotData.data, plotData.layout, {
+            responsive: true,
+            displayModeBar: false
+          });
+        } catch (error) {
+          console.error('Error rendering Plotly chart:', error);
+        }
+      }
+    }, [data]);
+
+    useEffect(() => {
+      // Load Plotly if not already loaded
+      if (!window.Plotly) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.plot.ly/plotly-latest.min.js';
+        script.async = true;
+        script.onload = () => {
+          if (data && chartRef.current) {
+            try {
+              const plotData = JSON.parse(data);
+              window.Plotly.newPlot(chartRef.current, plotData.data, plotData.layout, {
+                responsive: true,
+                displayModeBar: false
+              });
+            } catch (error) {
+              console.error('Error rendering Plotly chart:', error);
+            }
+          }
+        };
+        document.head.appendChild(script);
+      }
+    }, []);
+
+    return <div ref={chartRef} id={id} style={{ width: '100%', height: '500px' }} />;
+  };
+
   useEffect(() => {
     const testConnection = async () => {
       try {
