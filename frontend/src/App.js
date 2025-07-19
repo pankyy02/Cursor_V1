@@ -1232,6 +1232,56 @@ const App = () => {
                         🔍 Clinical Trials ({clinicalTrials.length})
                       </button>
                     )}
+                    
+                    {/* Phase 3: Real-World Evidence Integration Tabs */}
+                    {realWorldEvidence && (
+                      <button
+                        onClick={() => setActiveTab("rwe")}
+                        className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
+                          activeTab === "rwe"
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        📊 Real-World Evidence
+                      </button>
+                    )}
+                    {marketAccessIntel && (
+                      <button
+                        onClick={() => setActiveTab("market_access")}
+                        className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
+                          activeTab === "market_access"
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        🏥 Market Access
+                      </button>
+                    )}
+                    {predictiveAnalytics && (
+                      <button
+                        onClick={() => setActiveTab("predictive")}
+                        className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
+                          activeTab === "predictive"
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        🔮 Predictive Analytics
+                      </button>
+                    )}
+                    {phase3Dashboard && (
+                      <button
+                        onClick={() => setActiveTab("dashboard")}
+                        className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
+                          activeTab === "dashboard"
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        📈 Phase 3 Dashboard
+                      </button>
+                    )}
                   </nav>
                 </div>
 
