@@ -4813,6 +4813,218 @@ async def search_trials_endpoint(therapy_area: str):
     trials = await search_clinical_trials(therapy_area)
     return {"trials": trials, "count": len(trials)}
 
+# Phase 3: API Endpoints for Real-World Evidence Integration & Market Access Intelligence
+
+@api_router.post("/real-world-evidence", response_model=RealWorldEvidence)
+async def generate_rwe_analysis(request: RWERequest):
+    """Generate Real-World Evidence analysis"""
+    try:
+        rwe_result = await generate_real_world_evidence(
+            therapy_area=request.therapy_area,
+            product_name=request.product_name,
+            analysis_type=request.analysis_type,
+            data_sources=request.data_sources,
+            api_key=request.api_key
+        )
+        
+        # Store RWE analysis in database
+        await db.rwe_analyses.insert_one({
+            "therapy_area": request.therapy_area,
+            "product_name": request.product_name,
+            "analysis_type": request.analysis_type,
+            "rwe_data": rwe_result.dict(),
+            "data_sources": request.data_sources,
+            "evidence_quality_score": rwe_result.evidence_quality_score,
+            "timestamp": datetime.utcnow()
+        })
+        
+        return rwe_result
+        
+    except Exception as e:
+        logger.error(f"RWE analysis error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"RWE analysis failed: {str(e)}")
+
+@api_router.post("/market-access-intelligence", response_model=MarketAccessIntelligence)
+async def generate_market_access_analysis(request: MarketAccessRequest):
+    """Generate Market Access Intelligence analysis"""
+    try:
+        market_access_result = await generate_market_access_intelligence(
+            therapy_area=request.therapy_area,
+            product_name=request.product_name,
+            target_markets=request.target_markets,
+            analysis_depth=request.analysis_depth,
+            api_key=request.api_key
+        )
+        
+        # Store market access analysis in database
+        await db.market_access_analyses.insert_one({
+            "therapy_area": request.therapy_area,
+            "product_name": request.product_name,
+            "target_markets": request.target_markets,
+            "analysis_depth": request.analysis_depth,
+            "market_access_data": market_access_result.dict(),
+            "market_readiness_score": market_access_result.market_readiness_score,
+            "timestamp": datetime.utcnow()
+        })
+        
+        return market_access_result
+        
+    except Exception as e:
+        logger.error(f"Market access analysis error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Market access analysis failed: {str(e)}")
+
+@api_router.post("/predictive-analytics", response_model=PredictiveAnalytics)
+async def generate_predictive_analysis(request: PredictiveAnalyticsRequest):
+    """Generate Predictive Analytics with ML-enhanced forecasting"""
+    try:
+        predictive_result = await generate_predictive_analytics(
+            therapy_area=request.therapy_area,
+            product_name=request.product_name,
+            forecast_horizon=request.forecast_horizon,
+            model_type=request.model_type,
+            include_rwe=request.include_rwe,
+            api_key=request.api_key
+        )
+        
+        # Store predictive analysis in database
+        await db.predictive_analyses.insert_one({
+            "therapy_area": request.therapy_area,
+            "product_name": request.product_name,
+            "forecast_horizon": request.forecast_horizon,
+            "model_type": request.model_type,
+            "include_rwe": request.include_rwe,
+            "predictive_data": predictive_result.dict(),
+            "model_performance": predictive_result.model_performance_metrics,
+            "timestamp": datetime.utcnow()
+        })
+        
+        return predictive_result
+        
+    except Exception as e:
+        logger.error(f"Predictive analytics error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Predictive analytics failed: {str(e)}")
+
+@api_router.get("/real-world-evidence/{therapy_area}")
+async def get_rwe_analysis(therapy_area: str, product_name: str = None):
+    """Retrieve RWE analysis"""
+    try:
+        query = {"therapy_area": {"$regex": therapy_area, "$options": "i"}}
+        if product_name:
+            query["product_name"] = {"$regex": product_name, "$options": "i"}
+        
+        analysis = await db.rwe_analyses.find_one(
+            query,
+            sort=[("timestamp", -1)]  # Get most recent
+        )
+        
+        if not analysis:
+            raise HTTPException(status_code=404, detail="RWE analysis not found")
+        
+        return RealWorldEvidence(**analysis["rwe_data"])
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/market-access-intelligence/{therapy_area}")
+async def get_market_access_analysis(therapy_area: str, product_name: str = None):
+    """Retrieve Market Access Intelligence analysis"""
+    try:
+        query = {"therapy_area": {"$regex": therapy_area, "$options": "i"}}
+        if product_name:
+            query["product_name"] = {"$regex": product_name, "$options": "i"}
+        
+        analysis = await db.market_access_analyses.find_one(
+            query,
+            sort=[("timestamp", -1)]  # Get most recent
+        )
+        
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Market access analysis not found")
+        
+        return MarketAccessIntelligence(**analysis["market_access_data"])
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/predictive-analytics/{therapy_area}")
+async def get_predictive_analysis(therapy_area: str, product_name: str = None):
+    """Retrieve Predictive Analytics analysis"""
+    try:
+        query = {"therapy_area": {"$regex": therapy_area, "$options": "i"}}
+        if product_name:
+            query["product_name"] = {"$regex": product_name, "$options": "i"}
+        
+        analysis = await db.predictive_analyses.find_one(
+            query,
+            sort=[("timestamp", -1)]  # Get most recent
+        )
+        
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Predictive analysis not found")
+        
+        return PredictiveAnalytics(**analysis["predictive_data"])
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/phase3-dashboard")
+async def get_phase3_dashboard():
+    """Get Phase 3 analytics dashboard data"""
+    try:
+        # Get counts of each analysis type
+        rwe_count = await db.rwe_analyses.count_documents({})
+        market_access_count = await db.market_access_analyses.count_documents({})
+        predictive_count = await db.predictive_analyses.count_documents({})
+        
+        # Get recent analyses
+        recent_rwe = await db.rwe_analyses.find({}).sort("timestamp", -1).limit(5).to_list(5)
+        recent_market_access = await db.market_access_analyses.find({}).sort("timestamp", -1).limit(5).to_list(5)
+        recent_predictive = await db.predictive_analyses.find({}).sort("timestamp", -1).limit(5).to_list(5)
+        
+        return {
+            "summary": {
+                "rwe_analyses": rwe_count,
+                "market_access_analyses": market_access_count,
+                "predictive_analyses": predictive_count,
+                "total_phase3_analyses": rwe_count + market_access_count + predictive_count
+            },
+            "recent_analyses": {
+                "rwe": recent_rwe,
+                "market_access": recent_market_access,
+                "predictive": recent_predictive
+            },
+            "capabilities": {
+                "real_world_evidence": [
+                    "Effectiveness vs. efficacy analysis",
+                    "Safety signal monitoring", 
+                    "Patient outcome assessment",
+                    "Adherence pattern analysis",
+                    "Health economics evaluation",
+                    "Comparative effectiveness research"
+                ],
+                "market_access": [
+                    "Payer landscape mapping",
+                    "Reimbursement pathway analysis",
+                    "Pricing strategy guidance",
+                    "Access barrier identification",
+                    "HEOR requirement assessment",
+                    "Regulatory timeline optimization"
+                ],
+                "predictive_analytics": [
+                    "ML-enhanced forecasting",
+                    "Monte Carlo simulations",
+                    "Competitive response modeling",
+                    "Risk-adjusted projections", 
+                    "Scenario probability analysis",
+                    "Uncertainty quantification"
+                ]
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Phase 3 dashboard error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Dashboard data retrieval failed: {str(e)}")
+
 # Include the router in the main app
 app.include_router(api_router)
 
