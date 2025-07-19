@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the comprehensive Pharma Intelligence Platform backend with key features including Core Analysis, Funnel Generation, Competitive Intelligence, Scenario Modeling, Clinical Trials Search, Export Functionality, Data Persistence, and Visualization Data generation."
+user_problem_statement: "Test the comprehensive Pharma Intelligence Platform backend including Phase 3: Real-World Evidence Integration & Market Access Intelligence with key features including RWE Analysis, Market Access Intelligence, Predictive Analytics, Phase 3 Dashboard, and enhanced Phase 1-2 capabilities."
 
 backend:
   - task: "API Health Check"
