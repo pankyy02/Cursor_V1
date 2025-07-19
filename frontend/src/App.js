@@ -3519,6 +3519,45 @@ const App = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">Login to Your Account</h3>
+            
+            {/* OAuth Buttons */}
+            <div className="space-y-3 mb-6">
+              <GoogleLogin
+                onSuccess={handleGoogleLogin}
+                onError={() => setError("Google login failed. Please try again.")}
+                theme="outline"
+                size="large"
+                width="100%"
+                text="signin_with"
+              />
+              
+              <div className="w-full">
+                <AppleSignin
+                  authOptions={{
+                    clientId: 'com.pharma.intelligence.platform',
+                    scope: 'name email',
+                    redirectURI: window.location.origin + '/auth/apple/callback',
+                    state: 'pharma_login',
+                    nonce: Math.random().toString(36).substring(2, 15),
+                    usePopup: true,
+                  }}
+                  uiType="dark"
+                  className="w-full apple-signin-button"
+                  onSuccess={handleAppleLogin}
+                  onError={() => setError("Apple login failed. Please try again.")}
+                />
+              </div>
+              
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="bg-white px-2 text-gray-500">Or continue with email</span>
+                </div>
+              </div>
+            </div>
+
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.target);
