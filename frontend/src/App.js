@@ -2204,7 +2204,7 @@ const App = () => {
             )}
 
             {/* Welcome Message */}
-            {!analysis && !funnel && !competitiveData && !scenarioModels && clinicalTrials.length === 0 && !perplexityResults && !companyIntelligence && !ensembleResult && (
+            {!analysis && !funnel && !competitiveData && !scenarioModels && clinicalTrials.length === 0 && !perplexityResults && !companyIntelligence && !ensembleResult && !financialModel && !timeline && !customTemplate && !advancedViz && (
               <div className="bg-white rounded-xl shadow-lg p-8">
                 <div className="text-center">
                   <div className="mb-6">
