@@ -58,8 +58,37 @@ db = client[os.environ.get('DB_NAME', 'pharma_intelligence')]
 # Create the main app without a prefix
 app = FastAPI()
 
+# Add session middleware for OAuth
+app.add_middleware(SessionMiddleware, secret_key=os.environ.get('SESSION_SECRET_KEY', secrets.token_urlsafe(32)))
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+
+# Phase 4: OAuth Configuration
+oauth = OAuth()
+
+# Configure Google OAuth
+oauth.register(
+    name='google',
+    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
+    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={
+        'scope': 'openid email profile'
+    }
+)
+
+# Configure Apple OAuth (will need client credentials)
+oauth.register(
+    name='apple',
+    client_id=os.environ.get('APPLE_CLIENT_ID'),
+    client_secret=os.environ.get('APPLE_CLIENT_SECRET'),
+    authorize_url='https://appleid.apple.com/auth/authorize',
+    access_token_url='https://appleid.apple.com/auth/token',
+    client_kwargs={
+        'scope': 'name email'
+    }
+)
 
 # Define Models
 class StatusCheck(BaseModel):
