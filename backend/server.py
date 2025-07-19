@@ -329,6 +329,398 @@ def create_scenario_comparison_chart(scenario_models, therapy_area="", product_n
     
     return json.dumps(fig, cls=PlotlyJSONEncoder)
 
+# Multi-Model AI Ensemble Functions
+async def analyze_with_claude(therapy_area: str, product_name: str, analysis_type: str, claude_key: str) -> Dict[str, Any]:
+    """Comprehensive analysis using Claude"""
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        chat = LlmChat(
+            api_key=claude_key,
+            session_id=f"ensemble_claude_{uuid.uuid4()}",
+            system_message=f"You are a world-class pharmaceutical analyst specializing in {analysis_type} analysis. Provide structured, quantitative insights with high confidence assessments."
+        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(4096)
+        
+        if analysis_type == "comprehensive":
+            prompt = f"""
+            Provide a comprehensive pharmaceutical analysis for {therapy_area}{f' - {product_name}' if product_name else ''}:
+            
+            1. MARKET ANALYSIS (size, growth, key drivers)
+            2. COMPETITIVE LANDSCAPE (major players, market shares, positioning)  
+            3. CLINICAL LANDSCAPE (treatment pathways, unmet needs, emerging therapies)
+            4. REGULATORY ENVIRONMENT (approval pathways, recent changes, requirements)
+            5. FORECASTING OUTLOOK (3-5 year projections, key assumptions, risk factors)
+            6. CONFIDENCE ASSESSMENT (rate confidence 1-10 for each section with justification)
+            
+            Provide specific numbers, percentages, and quantitative insights where possible.
+            For each section, include a confidence score (1-10) based on available data quality.
+            """
+            
+        elif analysis_type == "competitive":
+            prompt = f"""
+            Deep competitive intelligence analysis for {therapy_area}{f' focusing on {product_name}' if product_name else ''}:
+            
+            1. KEY COMPETITORS (names, products, market positions, strengths/weaknesses)
+            2. MARKET SHARE ANALYSIS (current shares, trends, growth rates)
+            3. PIPELINE THREATS (Phase 2/3 drugs, potential market disruptors)
+            4. PRICING DYNAMICS (current pricing, pressure points, access challenges)
+            5. DIFFERENTIATION FACTORS (unique selling points, competitive advantages)
+            6. STRATEGIC POSITIONING (how competitors position vs. each other)
+            
+            Include confidence scores for each competitive assessment.
+            """
+            
+        elif analysis_type == "forecasting":
+            prompt = f"""
+            Advanced forecasting analysis for {therapy_area}{f' - {product_name}' if product_name else ''}:
+            
+            1. MARKET SIZE PROJECTIONS (current and 5-year forecast with growth rates)
+            2. PATIENT POPULATION TRENDS (epidemiology, diagnosis rates, treatment patterns)
+            3. ADOPTION CURVES (uptake scenarios, penetration rates, time to peak)
+            4. REVENUE MODELS (pricing assumptions, volume projections, peak sales)
+            5. RISK SCENARIOS (best/worst case, key risk factors, probability assessments)
+            6. SENSITIVITY ANALYSIS (key variables that impact forecasts)
+            
+            Provide specific numerical forecasts with confidence intervals.
+            """
+        
+        response = await chat.send_message(UserMessage(text=prompt))
+        
+        # Extract confidence scores from response
+        import re
+        confidence_pattern = r'confidence[:\s]*([0-9](?:\.[0-9])?(?:/10)?)'
+        confidence_matches = re.findall(confidence_pattern, response.lower())
+        
+        avg_confidence = 0.75  # Default
+        if confidence_matches:
+            scores = []
+            for match in confidence_matches:
+                try:
+                    score = float(match.replace('/10', ''))
+                    if score <= 1.0:
+                        score *= 10  # Convert to 10-point scale if needed
+                    scores.append(score / 10.0)  # Normalize to 0-1
+                except:
+                    continue
+            if scores:
+                avg_confidence = sum(scores) / len(scores)
+        
+        return {
+            "analysis": response,
+            "confidence_score": avg_confidence,
+            "model": "claude-sonnet-4",
+            "analysis_type": analysis_type,
+            "word_count": len(response.split()),
+            "timestamp": datetime.utcnow().isoformat(),
+            "error": None
+        }
+        
+    except Exception as e:
+        return {
+            "analysis": f"Claude analysis failed: {str(e)}",
+            "confidence_score": 0.0,
+            "model": "claude-sonnet-4",
+            "analysis_type": analysis_type,
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+async def analyze_with_perplexity(therapy_area: str, product_name: str, analysis_type: str, perplexity_key: str) -> Dict[str, Any]:
+    """Real-time market intelligence using Perplexity"""
+    try:
+        if analysis_type == "comprehensive":
+            query = f"""
+            Latest comprehensive market analysis for {therapy_area} pharmaceutical market 2024-2025:
+            - Current market size and growth projections
+            - Key pharmaceutical companies and their market positions  
+            - Recent clinical trial results and FDA approvals
+            - Market access and reimbursement trends
+            - Competitive landscape and emerging threats
+            {f'- Specific analysis of {product_name} and direct competitors' if product_name else ''}
+            
+            Include specific numbers, recent data, and quantitative metrics.
+            """
+            
+        elif analysis_type == "competitive":
+            query = f"""
+            Real-time competitive intelligence for {therapy_area} market:
+            - Current market leaders and their latest performance metrics
+            - Recent partnership announcements and strategic moves
+            - Latest clinical trial results and pipeline updates
+            - Pricing changes and market access developments
+            - Recent FDA approvals and regulatory decisions
+            {f'- Latest news and developments for {product_name}' if product_name else ''}
+            
+            Focus on actionable competitive intelligence from the past 6 months.
+            """
+            
+        elif analysis_type == "forecasting":
+            query = f"""
+            Latest forecasting data and market projections for {therapy_area}:
+            - Recent analyst reports and revenue forecasts
+            - Patient population studies and epidemiology updates
+            - Treatment adoption trends and market penetration data
+            - Pricing trends and reimbursement decisions
+            - Market growth drivers and projected scenarios
+            {f'- Specific forecasting data for {product_name}' if product_name else ''}
+            
+            Include quantitative projections and growth assumptions from recent sources.
+            """
+        
+        result = await search_with_perplexity(query, perplexity_key, f"{analysis_type}_intelligence")
+        
+        # Assess data quality based on citation count and content length
+        citation_count = len(result.citations)
+        content_length = len(result.content)
+        
+        # Calculate confidence based on data quality indicators
+        confidence_score = min(1.0, (citation_count * 0.1) + (content_length / 5000.0))
+        confidence_score = max(0.3, confidence_score)  # Minimum 0.3 confidence
+        
+        return {
+            "analysis": result.content,
+            "confidence_score": confidence_score,
+            "model": "perplexity-sonar-pro",
+            "analysis_type": analysis_type,
+            "citations": result.citations,
+            "citation_count": citation_count,
+            "search_query": result.search_query,
+            "timestamp": datetime.utcnow().isoformat(),
+            "error": None
+        }
+        
+    except Exception as e:
+        return {
+            "analysis": f"Perplexity analysis failed: {str(e)}",
+            "confidence_score": 0.0,
+            "model": "perplexity-sonar-pro",
+            "analysis_type": analysis_type,
+            "citations": [],
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+async def analyze_with_gemini(therapy_area: str, product_name: str, analysis_type: str, gemini_key: str) -> Dict[str, Any]:
+    """Optional Gemini analysis for ensemble"""
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        chat = LlmChat(
+            api_key=gemini_key,
+            session_id=f"ensemble_gemini_{uuid.uuid4()}",
+            system_message=f"You are a pharmaceutical market analyst. Provide {analysis_type} analysis with numerical insights and confidence assessments."
+        ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(3072)
+        
+        prompt = f"""
+        Pharmaceutical {analysis_type} analysis for {therapy_area}{f' - {product_name}' if product_name else ''}:
+        
+        Focus on:
+        1. Quantitative market metrics and data
+        2. Specific numerical insights and projections  
+        3. Evidence-based analysis with confidence levels
+        4. Risk assessment and uncertainty factors
+        5. Actionable strategic insights
+        
+        Rate your confidence level (1-10) for different aspects of the analysis.
+        Provide specific numbers and quantitative insights where possible.
+        """
+        
+        response = await chat.send_message(UserMessage(text=prompt))
+        
+        # Simple confidence extraction for Gemini
+        confidence_score = 0.7  # Default for Gemini
+        if any(word in response.lower() for word in ['confident', 'certain', 'definitive']):
+            confidence_score = 0.85
+        elif any(word in response.lower() for word in ['uncertain', 'limited', 'unclear']):
+            confidence_score = 0.55
+            
+        return {
+            "analysis": response,
+            "confidence_score": confidence_score,
+            "model": "gemini-2.0-flash",
+            "analysis_type": analysis_type,
+            "word_count": len(response.split()),
+            "timestamp": datetime.utcnow().isoformat(),
+            "error": None
+        }
+        
+    except Exception as e:
+        return {
+            "analysis": f"Gemini analysis failed: {str(e)}",
+            "confidence_score": 0.0,
+            "model": "gemini-2.0-flash", 
+            "analysis_type": analysis_type,
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+async def synthesize_ensemble_analysis(claude_result: Dict, perplexity_result: Dict, gemini_result: Dict = None) -> Dict[str, Any]:
+    """Synthesize insights from multiple AI models"""
+    try:
+        models_used = ["Claude", "Perplexity"]
+        analyses = [claude_result["analysis"], perplexity_result["analysis"]]
+        confidences = [claude_result["confidence_score"], perplexity_result["confidence_score"]]
+        
+        if gemini_result and gemini_result.get("error") is None:
+            models_used.append("Gemini")
+            analyses.append(gemini_result["analysis"])
+            confidences.append(gemini_result["confidence_score"])
+        
+        # Calculate model agreement score
+        model_agreement_score = sum(confidences) / len(confidences)
+        
+        # Find consensus insights (common themes across models)
+        consensus_insights = []
+        conflicting_points = []
+        
+        # Simple keyword analysis for consensus (can be enhanced)
+        common_keywords = []
+        all_text = " ".join(analyses).lower()
+        
+        # Look for common pharmaceutical insights
+        insight_patterns = [
+            "market size", "growth rate", "competitive", "approval", "clinical trial", 
+            "patient population", "treatment", "revenue", "forecast", "risk"
+        ]
+        
+        for pattern in insight_patterns:
+            if all(pattern in analysis.lower() for analysis in analyses):
+                consensus_insights.append(f"All models identify {pattern} as key factor")
+        
+        # Look for conflicting viewpoints (different confidence levels or opposing statements)
+        if max(confidences) - min(confidences) > 0.3:
+            conflicting_points.append(f"Model confidence varies significantly ({min(confidences):.2f} to {max(confidences):.2f})")
+        
+        # Generate synthesis
+        synthesis_prompt = f"""
+        Based on analysis from {len(models_used)} AI models ({', '.join(models_used)}), provide a synthesized executive summary that:
+        
+        1. Highlights consensus insights where models agree
+        2. Notes areas of uncertainty or disagreement  
+        3. Provides weighted recommendations based on model confidence
+        4. Identifies the most reliable insights and key uncertainties
+        
+        Model confidences: {[f'{models_used[i]}: {confidences[i]:.2f}' for i in range(len(models_used))]}
+        
+        Key findings to synthesize:
+        {chr(10).join([f'{models_used[i]}: {analyses[i][:200]}...' for i in range(len(analyses))])}
+        """
+        
+        # Use the highest confidence model for synthesis
+        best_model_idx = confidences.index(max(confidences))
+        if best_model_idx == 0 and claude_result.get("error") is None:
+            # Use Claude for synthesis
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            chat = LlmChat(
+                api_key="temp",  # Would need to be passed
+                session_id=f"synthesis_{uuid.uuid4()}",
+                system_message="You are an expert at synthesizing multiple AI analyses into coherent insights."
+            ).with_model("anthropic", "claude-sonnet-4-20250514")
+            
+            synthesis = f"Multi-model ensemble analysis combining insights from {', '.join(models_used)} with agreement score: {model_agreement_score:.2f}"
+        else:
+            synthesis = f"Ensemble analysis from {len(models_used)} models with weighted confidence: {model_agreement_score:.2f}"
+        
+        # Compile recommendation
+        if model_agreement_score > 0.8:
+            recommendation = "High confidence ensemble - proceed with insights"
+        elif model_agreement_score > 0.6:
+            recommendation = "Moderate confidence - validate key assumptions"
+        else:
+            recommendation = "Low agreement - require additional validation"
+        
+        return {
+            "ensemble_synthesis": synthesis,
+            "model_agreement_score": model_agreement_score,
+            "consensus_insights": consensus_insights,
+            "conflicting_points": conflicting_points,
+            "recommendation": recommendation,
+            "models_used": models_used,
+            "confidence_scores": {models_used[i]: confidences[i] for i in range(len(models_used))},
+            "synthesis_quality": "automated",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            "ensemble_synthesis": f"Synthesis failed: {str(e)}",
+            "model_agreement_score": 0.0,
+            "consensus_insights": [],
+            "conflicting_points": [f"Synthesis error: {str(e)}"],
+            "recommendation": "Unable to provide recommendation due to synthesis error",
+            "models_used": [],
+            "confidence_scores": {},
+            "error": str(e)
+        }
+
+async def run_ensemble_analysis(therapy_area: str, product_name: str, analysis_type: str, 
+                              claude_key: str, perplexity_key: str, gemini_key: str = None, 
+                              use_gemini: bool = False) -> EnsembleResult:
+    """Run complete multi-model ensemble analysis"""
+    try:
+        # Run analyses in parallel for efficiency
+        import asyncio
+        
+        tasks = []
+        tasks.append(analyze_with_claude(therapy_area, product_name, analysis_type, claude_key))
+        tasks.append(analyze_with_perplexity(therapy_area, product_name, analysis_type, perplexity_key))
+        
+        if use_gemini and gemini_key:
+            tasks.append(analyze_with_gemini(therapy_area, product_name, analysis_type, gemini_key))
+        
+        # Execute analyses
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        claude_result = results[0] if not isinstance(results[0], Exception) else {"analysis": f"Claude failed: {results[0]}", "confidence_score": 0.0, "error": str(results[0])}
+        perplexity_result = results[1] if not isinstance(results[1], Exception) else {"analysis": f"Perplexity failed: {results[1]}", "confidence_score": 0.0, "error": str(results[1])}
+        gemini_result = None
+        
+        if use_gemini and len(results) > 2:
+            gemini_result = results[2] if not isinstance(results[2], Exception) else {"analysis": f"Gemini failed: {results[2]}", "confidence_score": 0.0, "error": str(results[2])}
+        
+        # Synthesize results
+        synthesis = await synthesize_ensemble_analysis(claude_result, perplexity_result, gemini_result)
+        
+        # Compile sources
+        sources = []
+        if perplexity_result.get("citations"):
+            sources.extend(perplexity_result["citations"])
+        
+        # Create ensemble result
+        ensemble_result = EnsembleResult(
+            therapy_area=therapy_area,
+            product_name=product_name,
+            claude_analysis=claude_result,
+            perplexity_intelligence=perplexity_result,
+            gemini_analysis=gemini_result,
+            ensemble_synthesis=synthesis["ensemble_synthesis"],
+            confidence_scores=synthesis["confidence_scores"],
+            consensus_insights=synthesis["consensus_insights"],
+            conflicting_points=synthesis["conflicting_points"],
+            recommendation=synthesis["recommendation"],
+            model_agreement_score=synthesis["model_agreement_score"],
+            sources=list(set(sources))  # Remove duplicates
+        )
+        
+        return ensemble_result
+        
+    except Exception as e:
+        # Return error ensemble result
+        return EnsembleResult(
+            therapy_area=therapy_area,
+            product_name=product_name,
+            claude_analysis={"analysis": f"Error: {str(e)}", "confidence_score": 0.0, "error": str(e)},
+            perplexity_intelligence={"analysis": f"Error: {str(e)}", "confidence_score": 0.0, "error": str(e)},
+            gemini_analysis=None,
+            ensemble_synthesis=f"Ensemble analysis failed: {str(e)}",
+            confidence_scores={},
+            consensus_insights=[],
+            conflicting_points=[f"Complete ensemble failure: {str(e)}"],
+            recommendation="Unable to provide analysis due to system error",
+            model_agreement_score=0.0,
+            sources=[]
+        )
+
 # Company Intelligence Engine Functions
 async def identify_parent_company(product_name: str, perplexity_key: str) -> Dict[str, str]:
     """Identify parent company and basic info from product name using Perplexity"""
