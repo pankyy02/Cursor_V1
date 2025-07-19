@@ -809,63 +809,117 @@ const App = () => {
                     </div>
                   )}
 
-                  {/* Scenario Modeling Tab */}
+                  {/* Scenario Modeling Tab - Enhanced */}
                   {activeTab === "scenarios" && scenarioModels && (
                     <div className="space-y-6">
                       <div className="mb-4">
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">🎯 Scenario Modeling & Forecasts</h3>
-                        <p className="text-gray-600">Multi-scenario analysis for {therapyArea}</p>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">🎯 Market Forecasting Scenarios</h3>
+                        <p className="text-gray-600">
+                          Multi-scenario analysis for {therapyArea}
+                          {analysis?.product_name && <span className="font-medium"> - {analysis.product_name}</span>}
+                        </p>
                       </div>
 
-                      {/* Scenario Comparison */}
-                      <div className="grid lg:grid-cols-3 gap-4">
+                      {/* Scenario Summary Cards */}
+                      <div className="grid lg:grid-cols-3 gap-4 mb-6">
                         {Object.entries(scenarioModels).map(([scenario, data]) => (
-                          <div key={scenario} className={`rounded-lg p-4 border ${
+                          <div key={scenario} className={`rounded-lg p-4 border-2 ${
                             scenario === 'optimistic' ? 'bg-green-50 border-green-200' :
                             scenario === 'pessimistic' ? 'bg-red-50 border-red-200' :
                             'bg-blue-50 border-blue-200'
                           }`}>
-                            <h4 className="text-lg font-semibold mb-3 capitalize">
-                              {scenario === 'optimistic' ? '📈' : scenario === 'pessimistic' ? '📉' : '📊'} {scenario} Scenario
+                            <h4 className="text-lg font-bold mb-3 capitalize flex items-center">
+                              {scenario === 'optimistic' ? '📈' : scenario === 'pessimistic' ? '📉' : '📊'} 
+                              <span className="ml-2">{scenario} Case</span>
                             </h4>
                             
-                            {data.peak_sales && (
-                              <div className="mb-3 p-3 bg-white rounded-md">
-                                <div className="text-sm text-gray-600">Peak Sales</div>
-                                <div className="text-xl font-bold text-gray-900">${data.peak_sales}M</div>
-                              </div>
-                            )}
-
-                            {data.projections && (
-                              <div className="mb-3">
-                                <div className="text-sm text-gray-600 mb-2">6-Year Revenue Projection</div>
-                                <div className="space-y-1">
-                                  {data.projections.map((projection, index) => (
-                                    <div key={index} className="flex justify-between text-sm">
-                                      <span>{2024 + index}</span>
-                                      <span className="font-medium">${projection}M</span>
-                                    </div>
-                                  ))}
+                            {/* Key Metrics */}
+                            <div className="space-y-3">
+                              {data.peak_sales && (
+                                <div className="bg-white rounded-md p-3">
+                                  <div className="text-sm text-gray-600">Peak Annual Sales</div>
+                                  <div className="text-xl font-bold text-gray-900">${data.peak_sales}M</div>
                                 </div>
-                              </div>
-                            )}
+                              )}
 
-                            {data.key_factors && (
-                              <div className="mt-3">
-                                <div className="text-sm text-gray-600 mb-2">Key Success Factors</div>
-                                <ul className="text-xs space-y-1">
-                                  {data.key_factors.map((factor, index) => (
+                              {data.projections && data.projections.length > 0 && (
+                                <div className="bg-white rounded-md p-3">
+                                  <div className="text-sm text-gray-600 mb-2">6-Year Revenue Trajectory</div>
+                                  <div className="space-y-1">
+                                    {data.projections.slice(0, 6).map((projection, index) => (
+                                      <div key={index} className="flex justify-between text-sm">
+                                        <span className="text-gray-600">{2024 + index}</span>
+                                        <span className="font-medium">${projection}M</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Market Share */}
+                              {data.market_share_trajectory && (
+                                <div className="bg-white rounded-md p-3">
+                                  <div className="text-sm text-gray-600 mb-1">Peak Market Share</div>
+                                  <div className="text-lg font-bold text-blue-600">
+                                    {Math.max(...data.market_share_trajectory)}%
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Key Assumptions & Success Factors */}
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">🎯 Key Assumptions</h4>
+                          <div className="space-y-3">
+                            {Object.entries(scenarioModels).map(([scenario, data]) => (
+                              <div key={scenario} className="bg-white rounded-md p-3">
+                                <div className="font-medium text-sm text-gray-900 capitalize mb-2">{scenario} Scenario</div>
+                                <ul className="text-sm text-gray-600 space-y-1">
+                                  {data.assumptions && data.assumptions.slice(0, 3).map((assumption, index) => (
                                     <li key={index} className="flex items-start">
-                                      <span className="mr-1">•</span>
+                                      <span className="mr-2">•</span>
+                                      <span>{assumption}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">🔑 Success Factors</h4>
+                          <div className="space-y-3">
+                            {Object.entries(scenarioModels).map(([scenario, data]) => (
+                              <div key={scenario} className="bg-white rounded-md p-3">
+                                <div className="font-medium text-sm text-gray-900 capitalize mb-2">{scenario} Keys</div>
+                                <ul className="text-sm text-gray-600 space-y-1">
+                                  {data.key_factors && data.key_factors.slice(0, 2).map((factor, index) => (
+                                    <li key={index} className="flex items-start">
+                                      <span className="mr-2">✓</span>
                                       <span>{factor}</span>
                                     </li>
                                   ))}
                                 </ul>
                               </div>
-                            )}
+                            ))}
                           </div>
-                        ))}
+                        </div>
                       </div>
+
+                      {/* Full Analysis Details */}
+                      {Object.values(scenarioModels).some(data => data.full_analysis) && (
+                        <div className="bg-gray-50 rounded-lg p-4 border">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">📋 Detailed Analysis</h4>
+                          <div className="max-h-60 overflow-y-auto text-sm text-gray-700 leading-relaxed">
+                            {Object.values(scenarioModels).find(data => data.full_analysis)?.full_analysis}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
