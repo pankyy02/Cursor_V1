@@ -1036,6 +1036,54 @@ const App = () => {
                         🎯 Scenarios
                       </button>
                     )}
+                    {financialModel && (
+                      <button
+                        onClick={() => setActiveTab("financial")}
+                        className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
+                          activeTab === "financial"
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        💰 Financial Model
+                      </button>
+                    )}
+                    {timeline && (
+                      <button
+                        onClick={() => setActiveTab("timeline")}
+                        className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
+                          activeTab === "timeline"
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        📅 Timeline
+                      </button>
+                    )}
+                    {customTemplate && (
+                      <button
+                        onClick={() => setActiveTab("template")}
+                        className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
+                          activeTab === "template"
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        📋 Template
+                      </button>
+                    )}
+                    {advancedViz && (
+                      <button
+                        onClick={() => setActiveTab("visualization")}
+                        className={`px-4 py-3 text-sm font-medium whitespace-nowrap ${
+                          activeTab === "visualization"
+                            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        🎯 Advanced Viz
+                      </button>
+                    )}
                     {companyIntelligence && (
                       <button
                         onClick={() => setActiveTab("company")}
