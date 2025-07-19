@@ -1038,6 +1038,53 @@ const App = () => {
                     </div>
                   )}
 
+                  {/* Real-time Search Tab */}
+                  {activeTab === "search" && perplexityResults && (
+                    <div className="space-y-6">
+                      <div className="mb-4">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">🔍 Real-time Intelligence Search</h3>
+                        <p className="text-gray-600">Latest market intelligence with verified sources</p>
+                        <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                          <span>📊 Query: {perplexityResults.search_query}</span>
+                          <span>📅 {new Date(perplexityResults.timestamp).toLocaleString()}</span>
+                          <span>🔗 {perplexityResults.citations.length} Sources</span>
+                        </div>
+                      </div>
+
+                      {/* Search Results */}
+                      <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4">📋 Intelligence Report</h4>
+                        <div className="text-gray-700 leading-relaxed whitespace-pre-wrap mb-4">
+                          {perplexityResults.content}
+                        </div>
+                        
+                        {/* Citations */}
+                        {perplexityResults.citations.length > 0 && (
+                          <div className="mt-6 pt-4 border-t border-green-200">
+                            <h5 className="text-md font-semibold text-gray-900 mb-3">📚 Verified Sources:</h5>
+                            <div className="grid md:grid-cols-2 gap-3">
+                              {perplexityResults.citations.map((citation, index) => (
+                                <div key={index} className="bg-white rounded-md p-3 shadow-sm border">
+                                  <a 
+                                    href={citation} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium block"
+                                  >
+                                    📖 Source {index + 1}
+                                  </a>
+                                  <div className="text-xs text-gray-500 mt-1 truncate">
+                                    {citation}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Clinical Trials Tab */}
                   {activeTab === "trials" && clinicalTrials.length > 0 && (
                     <div className="space-y-6">
