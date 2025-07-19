@@ -152,7 +152,7 @@ const App = () => {
       return;
     }
 
-    setIsLoading(true);
+    setLoadingState('scenarios', true);
     setError("");
 
     try {
@@ -169,7 +169,7 @@ const App = () => {
       console.error("Scenario modeling error:", error);
       setError(error.response?.data?.detail || "Scenario modeling failed. Please try again.");
     } finally {
-      setIsLoading(false);
+      setLoadingState('scenarios', false);
     }
   };
 
