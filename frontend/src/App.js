@@ -28,6 +28,9 @@ const App = () => {
   const [scenarioModels, setScenarioModels] = useState(null);
   const [clinicalTrials, setClinicalTrials] = useState([]);
   const [exportLoading, setExportLoading] = useState(false);
+  const [perplexityKey, setPerplexityKey] = useState("");
+  const [realTimeSearch, setRealTimeSearch] = useState("");
+  const [perplexityResults, setPerplexityResults] = useState(null);
 
   const setLoadingState = (operation, isLoading) => {
     setLoadingStates(prev => ({
