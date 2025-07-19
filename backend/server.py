@@ -57,6 +57,11 @@ class TherapyAreaRequest(BaseModel):
     product_name: Optional[str] = None
     api_key: str
 
+class PatientFlowFunnelRequest(BaseModel):
+    therapy_area: str
+    analysis_id: str
+    api_key: str
+
 class CompetitiveAnalysisRequest(BaseModel):
     therapy_area: str
     analysis_id: str
