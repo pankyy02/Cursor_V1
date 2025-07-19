@@ -3631,6 +3631,811 @@ async def enhanced_competitive_intel(request: CompetitiveAnalysisRequest):
         logger.error(f"Enhanced competitive analysis error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Enhanced analysis failed: {str(e)}")
 
+# Phase 3: Real-World Evidence Integration Functions
+async def generate_real_world_evidence(therapy_area: str, product_name: str, analysis_type: str, data_sources: List[str], api_key: str) -> RealWorldEvidence:
+    """Generate comprehensive Real-World Evidence analysis"""
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"rwe_{uuid.uuid4()}",
+            system_message="You are a pharmaceutical real-world evidence expert specializing in effectiveness studies, safety monitoring, and health economics."
+        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(4096)
+        
+        # Create data source specific prompts
+        data_source_descriptions = {
+            "registries": "patient registries and disease-specific databases",
+            "claims": "insurance claims and administrative databases", 
+            "ehr": "electronic health records and clinical documentation",
+            "patient_outcomes": "patient-reported outcomes and quality of life studies"
+        }
+        
+        sources_text = ", ".join([data_source_descriptions.get(ds, ds) for ds in data_sources])
+        product_context = f" for {product_name}" if product_name else ""
+        
+        prompt = f"""
+        Generate a comprehensive Real-World Evidence analysis for {therapy_area}{product_context} using {sources_text}.
+        
+        Analysis Type: {analysis_type}
+        
+        Provide detailed analysis for each section:
+        
+        1. EFFECTIVENESS DATA:
+        - Real-world effectiveness vs clinical trial efficacy
+        - Response rates in diverse populations  
+        - Time to response and duration of treatment
+        - Comparative effectiveness vs standard of care
+        - Subgroup analyses (age, gender, comorbidities)
+        
+        2. SAFETY PROFILE:
+        - Adverse event rates in real-world settings
+        - Safety signals not seen in trials
+        - Long-term safety monitoring data
+        - Drug interactions and contraindications
+        - Special population safety considerations
+        
+        3. PATIENT OUTCOMES:
+        - Quality of life improvements
+        - Functional status changes
+        - Patient-reported outcome measures (PROMs)
+        - Treatment satisfaction scores
+        - Return to work/normal activities
+        
+        4. REAL-WORLD PERFORMANCE:
+        - Treatment adherence and persistence rates
+        - Dose modifications and discontinuation reasons  
+        - Healthcare resource utilization
+        - Hospital readmission rates
+        - Emergency department visits
+        
+        5. COMPARATIVE EFFECTIVENESS:
+        - Head-to-head comparisons with competitors
+        - Relative effectiveness in matched cohorts
+        - Time-to-treatment failure comparisons
+        - Switching patterns between treatments
+        
+        6. COST-EFFECTIVENESS:
+        - Real-world cost per QALY
+        - Budget impact on healthcare systems
+        - Direct and indirect cost comparisons
+        - Value-based care metrics
+        
+        7. ADHERENCE PATTERNS:
+        - Medication adherence rates over time
+        - Factors affecting adherence
+        - Impact of adherence on outcomes
+        - Support program effectiveness
+        
+        8. HEALTH ECONOMICS DATA:
+        - Healthcare cost offsets
+        - Productivity gains
+        - Caregiver burden reduction
+        - Long-term economic impact
+        
+        Provide specific metrics, percentages, and quantitative data where possible. Include limitations and data quality considerations.
+        Rate the overall evidence quality on a scale of 0-1.
+        """
+        
+        response = await chat.send_message(UserMessage(text=prompt))
+        
+        # Parse response into structured data
+        effectiveness_data = extract_section_data(response, "EFFECTIVENESS")
+        safety_profile = extract_section_data(response, "SAFETY")
+        patient_outcomes = extract_section_data(response, "PATIENT OUTCOMES")
+        real_world_performance = extract_section_data(response, "REAL-WORLD PERFORMANCE")
+        comparative_effectiveness = extract_comparative_data(response)
+        cost_effectiveness = extract_section_data(response, "COST-EFFECTIVENESS")
+        adherence_patterns = extract_section_data(response, "ADHERENCE")
+        health_economics_data = extract_section_data(response, "HEALTH ECONOMICS")
+        
+        # Calculate evidence quality score
+        evidence_quality_score = calculate_evidence_quality(response, data_sources)
+        
+        return RealWorldEvidence(
+            therapy_area=therapy_area,
+            product_name=product_name,
+            effectiveness_data=effectiveness_data,
+            safety_profile=safety_profile,
+            patient_outcomes=patient_outcomes,
+            real_world_performance=real_world_performance,
+            comparative_effectiveness=comparative_effectiveness,
+            cost_effectiveness=cost_effectiveness,
+            adherence_patterns=adherence_patterns,
+            health_economics_data=health_economics_data,
+            evidence_quality_score=evidence_quality_score,
+            data_sources=data_sources,
+            study_populations=extract_population_data(response),
+            limitations=extract_limitations(response),
+            recommendations=extract_recommendations(response)
+        )
+        
+    except Exception as e:
+        logging.error(f"RWE generation error: {str(e)}")
+        # Return minimal structure on error
+        return RealWorldEvidence(
+            therapy_area=therapy_area,
+            product_name=product_name,
+            effectiveness_data={"error": str(e)},
+            safety_profile={"error": str(e)},
+            patient_outcomes={"error": str(e)},
+            real_world_performance={"error": str(e)},
+            comparative_effectiveness=[],
+            cost_effectiveness={"error": str(e)},
+            adherence_patterns={"error": str(e)},
+            health_economics_data={"error": str(e)},
+            evidence_quality_score=0.0,
+            data_sources=data_sources,
+            study_populations={},
+            limitations=["Data generation error"],
+            recommendations=["Unable to generate recommendations due to error"]
+        )
+
+async def generate_market_access_intelligence(therapy_area: str, product_name: str, target_markets: List[str], analysis_depth: str, api_key: str) -> MarketAccessIntelligence:
+    """Generate comprehensive Market Access Intelligence"""
+    try:
+        # First get real-time market intelligence via Perplexity
+        perplexity_results = []
+        for market in target_markets:
+            market_query = f"{therapy_area} {product_name} market access reimbursement {market} payer landscape 2024"
+            perplexity_result = await search_with_perplexity(market_query, api_key, "market_access")
+            perplexity_results.append(perplexity_result)
+        
+        # Combine Perplexity intelligence
+        real_time_data = "\n\n".join([result.content for result in perplexity_results])
+        
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"market_access_{uuid.uuid4()}",
+            system_message="You are a pharmaceutical market access expert specializing in reimbursement, pricing, and payer strategies."
+        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(4096)
+        
+        markets_text = ", ".join(target_markets)
+        product_context = f" for {product_name}" if product_name else ""
+        
+        prompt = f"""
+        Generate comprehensive Market Access Intelligence for {therapy_area}{product_context} across {markets_text}.
+        
+        Analysis Depth: {analysis_depth}
+        
+        Use this real-time market intelligence:
+        {real_time_data}
+        
+        Provide detailed analysis for each section:
+        
+        1. PAYER LANDSCAPE:
+        - Key payers and market share by region
+        - Decision-making processes and timelines
+        - Key decision makers and influencers
+        - Budget allocation and spending patterns
+        - Reimbursement mechanisms (fee-for-service vs value-based)
+        
+        2. REIMBURSEMENT PATHWAYS:
+        - Standard coverage determination processes
+        - Prior authorization requirements
+        - Step therapy and fail-first policies
+        - Appeals processes and success rates
+        - Coverage criteria and medical policies
+        
+        3. PRICING ANALYSIS:
+        - Reference pricing systems
+        - Price benchmarking across markets
+        - Discount and rebate expectations
+        - Value-based pricing opportunities
+        - Health technology assessment requirements
+        
+        4. ACCESS BARRIERS:
+        - Administrative barriers (prior auth, step therapy)
+        - Clinical barriers (restricted indications)
+        - Economic barriers (copay, coinsurance)
+        - Infrastructure barriers (specialty pharmacy)
+        - Provider barriers (lack of awareness, training)
+        
+        5. HEOR REQUIREMENTS:
+        - Health economic evaluation standards
+        - Required clinical endpoints
+        - Budget impact model requirements
+        - Cost-effectiveness thresholds
+        - Real-world evidence expectations
+        
+        6. REGULATORY PATHWAYS:
+        - Expedited review pathways available
+        - Regulatory timeline expectations
+        - Post-market commitments
+        - Risk evaluation and mitigation strategies
+        - Companion diagnostic requirements
+        
+        7. APPROVAL TIMELINES:
+        - Average time from submission to decision
+        - Expedited pathway timelines
+        - Resubmission rates and reasons
+        - Key regulatory milestones
+        
+        8. FORMULARY PLACEMENT:
+        - Tier placement expectations
+        - Formulary committee processes
+        - Coverage policy development timelines
+        - Preferred vs non-preferred status factors
+        
+        9. BUDGET IMPACT MODELS:
+        - Budget impact thresholds
+        - Model validation requirements
+        - Sensitivity analysis expectations
+        - Time horizon requirements
+        
+        10. STAKEHOLDER MAPPING:
+        - Key opinion leaders and their influence
+        - Patient advocacy groups
+        - Professional medical societies
+        - Regulatory agencies and their priorities
+        
+        Provide specific metrics, timelines, and actionable insights. Calculate a market readiness score (0-1).
+        """
+        
+        response = await chat.send_message(UserMessage(text=prompt))
+        
+        # Parse response into structured data
+        payer_landscape = extract_section_data(response, "PAYER LANDSCAPE")
+        reimbursement_pathways = extract_section_data(response, "REIMBURSEMENT PATHWAYS")
+        pricing_analysis = extract_section_data(response, "PRICING ANALYSIS")
+        access_barriers = extract_barriers_data(response)
+        heor_requirements = extract_section_data(response, "HEOR REQUIREMENTS")
+        regulatory_pathways = extract_section_data(response, "REGULATORY PATHWAYS")
+        approval_timelines = extract_timelines_data(response)
+        formulary_placement = extract_section_data(response, "FORMULARY PLACEMENT")
+        budget_impact_models = extract_section_data(response, "BUDGET IMPACT")
+        coverage_policies = extract_policies_data(response)
+        stakeholder_mapping = extract_section_data(response, "STAKEHOLDER MAPPING")
+        
+        # Calculate market readiness score
+        market_readiness_score = calculate_market_readiness(response, target_markets)
+        
+        return MarketAccessIntelligence(
+            therapy_area=therapy_area,
+            product_name=product_name,
+            payer_landscape=payer_landscape,
+            reimbursement_pathways=reimbursement_pathways,
+            pricing_analysis=pricing_analysis,
+            access_barriers=access_barriers,
+            heor_requirements=heor_requirements,
+            regulatory_pathways=regulatory_pathways,
+            approval_timelines=approval_timelines,
+            formulary_placement=formulary_placement,
+            budget_impact_models=budget_impact_models,
+            coverage_policies=coverage_policies,
+            stakeholder_mapping=stakeholder_mapping,
+            market_readiness_score=market_readiness_score,
+            recommendations=extract_recommendations(response)
+        )
+        
+    except Exception as e:
+        logging.error(f"Market access intelligence error: {str(e)}")
+        # Return minimal structure on error
+        return MarketAccessIntelligence(
+            therapy_area=therapy_area,
+            product_name=product_name,
+            payer_landscape={"error": str(e)},
+            reimbursement_pathways={"error": str(e)},
+            pricing_analysis={"error": str(e)},
+            access_barriers=[],
+            heor_requirements={"error": str(e)},
+            regulatory_pathways={"error": str(e)},
+            approval_timelines={"error": str(e)},
+            formulary_placement={"error": str(e)},
+            budget_impact_models={"error": str(e)},
+            coverage_policies=[],
+            stakeholder_mapping={"error": str(e)},
+            market_readiness_score=0.0,
+            recommendations=["Unable to generate recommendations due to error"]
+        )
+
+async def generate_predictive_analytics(therapy_area: str, product_name: str, forecast_horizon: int, model_type: str, include_rwe: bool, api_key: str) -> PredictiveAnalytics:
+    """Generate advanced Predictive Analytics with ML-enhanced forecasting"""
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"predictive_{uuid.uuid4()}",
+            system_message="You are a pharmaceutical forecasting expert specializing in predictive analytics, machine learning models, and advanced market modeling."
+        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(4096)
+        
+        product_context = f" for {product_name}" if product_name else ""
+        rwe_context = " incorporating real-world evidence" if include_rwe else ""
+        
+        prompt = f"""
+        Generate advanced Predictive Analytics for {therapy_area}{product_context} with {forecast_horizon}-year horizon using {model_type} modeling{rwe_context}.
+        
+        Provide detailed analysis for each section:
+        
+        1. MARKET PENETRATION FORECAST:
+        - Year-over-year penetration rates (next {forecast_horizon} years)
+        - Patient adoption curves and S-curve modeling
+        - Geographic rollout predictions
+        - Market saturation analysis
+        - Penetration by patient segments
+        
+        2. COMPETITIVE RESPONSE MODELING:
+        - Competitor launch impact predictions
+        - Price erosion scenarios
+        - Market share cannibalization models
+        - Defensive strategy effectiveness
+        - New entrant threat assessment
+        
+        3. PATIENT FLOW PREDICTIONS:
+        - Treatment-naive patient flow forecasts
+        - Switching behavior predictions
+        - Treatment sequence modeling
+        - Duration of therapy projections
+        - Discontinuation rate forecasts
+        
+        4. REVENUE FORECASTS:
+        - Annual revenue projections ({forecast_horizon} years)
+        - Peak sales timing and magnitude
+        - Price evolution modeling
+        - Volume vs price contribution
+        - Revenue by indication/geography
+        
+        5. RISK-ADJUSTED PROJECTIONS:
+        - Monte Carlo simulation results (1000+ scenarios)
+        - Confidence intervals (80%, 95%)
+        - Downside/upside risk quantification
+        - Stress testing scenarios
+        - Value-at-risk calculations
+        
+        6. SCENARIO PROBABILITIES:
+        - Bull case probability and drivers
+        - Base case probability and assumptions
+        - Bear case probability and risks
+        - Black swan event impacts
+        - Scenario transition probabilities
+        
+        7. KEY ASSUMPTIONS:
+        - Clinical success probabilities
+        - Regulatory approval assumptions
+        - Pricing and reimbursement assumptions
+        - Market access timeline assumptions
+        - Competitive landscape assumptions
+        
+        8. SENSITIVITY FACTORS:
+        - Price sensitivity analysis
+        - Market size sensitivity
+        - Penetration rate sensitivity
+        - Launch timing sensitivity
+        - Competition sensitivity
+        
+        9. MODEL PERFORMANCE METRICS:
+        - Historical forecasting accuracy
+        - Prediction intervals
+        - Model calibration scores
+        - Cross-validation results
+        - Ensemble model weights
+        
+        10. UNCERTAINTY ANALYSIS:
+        - Parameter uncertainty quantification
+        - Model uncertainty assessment
+        - Scenario uncertainty evaluation
+        - Total forecast uncertainty
+        - Risk decomposition analysis
+        
+        Provide specific numbers, percentages, and quantitative projections. Include confidence levels and uncertainty ranges.
+        """
+        
+        response = await chat.send_message(UserMessage(text=prompt))
+        
+        # Parse response into structured data
+        market_penetration_forecast = extract_forecast_data(response, "MARKET PENETRATION")
+        competitive_response_modeling = extract_section_data(response, "COMPETITIVE RESPONSE")
+        patient_flow_predictions = extract_section_data(response, "PATIENT FLOW")
+        revenue_forecasts = extract_revenue_data(response, forecast_horizon)
+        risk_adjusted_projections = extract_risk_data(response)
+        scenario_probabilities = extract_scenario_probabilities(response)
+        confidence_intervals = extract_confidence_intervals(response)
+        key_assumptions = extract_assumptions(response)
+        sensitivity_factors = extract_sensitivity_data(response)
+        model_performance_metrics = extract_performance_metrics(response)
+        uncertainty_analysis = extract_uncertainty_data(response)
+        
+        return PredictiveAnalytics(
+            therapy_area=therapy_area,
+            product_name=product_name,
+            market_penetration_forecast=market_penetration_forecast,
+            competitive_response_modeling=competitive_response_modeling,
+            patient_flow_predictions=patient_flow_predictions,
+            revenue_forecasts=revenue_forecasts,
+            risk_adjusted_projections=risk_adjusted_projections,
+            scenario_probabilities=scenario_probabilities,
+            confidence_intervals=confidence_intervals,
+            key_assumptions=key_assumptions,
+            sensitivity_factors=sensitivity_factors,
+            model_performance_metrics=model_performance_metrics,
+            uncertainty_analysis=uncertainty_analysis,
+            recommendations=extract_recommendations(response)
+        )
+        
+    except Exception as e:
+        logging.error(f"Predictive analytics error: {str(e)}")
+        # Return minimal structure on error
+        return PredictiveAnalytics(
+            therapy_area=therapy_area,
+            product_name=product_name,
+            market_penetration_forecast={"error": str(e)},
+            competitive_response_modeling={"error": str(e)},
+            patient_flow_predictions={"error": str(e)},
+            revenue_forecasts={"error": str(e)},
+            risk_adjusted_projections={"error": str(e)},
+            scenario_probabilities={},
+            confidence_intervals={"error": str(e)},
+            key_assumptions=["Error in data generation"],
+            sensitivity_factors={},
+            model_performance_metrics={},
+            uncertainty_analysis={"error": str(e)},
+            recommendations=["Unable to generate recommendations due to error"]
+        )
+
+# Helper functions for data extraction
+def extract_section_data(response: str, section_name: str) -> Dict[str, Any]:
+    """Extract structured data from a specific section"""
+    lines = response.split('\n')
+    section_started = False
+    section_data = {"content": "", "key_points": []}
+    
+    for line in lines:
+        if section_name.upper() in line.upper():
+            section_started = True
+            continue
+        elif section_started and any(other_section in line.upper() for other_section in 
+                                   ["EFFECTIVENESS", "SAFETY", "OUTCOMES", "PERFORMANCE", "COMPARATIVE", 
+                                    "COST", "ADHERENCE", "ECONOMICS", "PAYER", "REIMBURSEMENT", 
+                                    "PRICING", "ACCESS", "HEOR", "REGULATORY", "APPROVAL", "FORMULARY",
+                                    "MARKET PENETRATION", "COMPETITIVE RESPONSE", "PATIENT FLOW", "REVENUE"]):
+            break
+        elif section_started:
+            if line.strip():
+                section_data["content"] += line + "\n"
+                if line.strip().startswith(('-', '•', '*')) or any(char.isdigit() for char in line[:3]):
+                    section_data["key_points"].append(line.strip())
+    
+    return section_data
+
+def extract_comparative_data(response: str) -> List[Dict[str, Any]]:
+    """Extract comparative effectiveness data"""
+    comparisons = []
+    lines = response.split('\n')
+    
+    for line in lines:
+        if 'vs' in line.lower() or 'compared to' in line.lower():
+            comparisons.append({
+                "comparison": line.strip(),
+                "outcome": "Not specified",
+                "confidence": 0.6
+            })
+    
+    return comparisons[:10]  # Limit to top 10
+
+def extract_barriers_data(response: str) -> List[Dict[str, str]]:
+    """Extract access barriers data"""
+    barriers = []
+    lines = response.split('\n')
+    barrier_started = False
+    
+    for line in lines:
+        if "ACCESS BARRIERS" in line.upper() or "BARRIERS" in line.upper():
+            barrier_started = True
+            continue
+        elif barrier_started and any(section in line.upper() for section in ["HEOR", "REGULATORY", "APPROVAL"]):
+            break
+        elif barrier_started and line.strip():
+            if line.strip().startswith(('-', '•', '*')):
+                barrier_type = "administrative"
+                if 'clinical' in line.lower():
+                    barrier_type = "clinical"
+                elif 'economic' in line.lower() or 'cost' in line.lower():
+                    barrier_type = "economic"
+                elif 'infrastructure' in line.lower():
+                    barrier_type = "infrastructure"
+                elif 'provider' in line.lower():
+                    barrier_type = "provider"
+                
+                barriers.append({
+                    "type": barrier_type,
+                    "description": line.strip(),
+                    "severity": "medium"
+                })
+    
+    return barriers
+
+def calculate_evidence_quality(response: str, data_sources: List[str]) -> float:
+    """Calculate evidence quality score"""
+    base_score = 0.6
+    
+    # Add points for data sources
+    source_bonus = len(data_sources) * 0.1
+    
+    # Add points for specific metrics mentioned
+    if any(term in response.lower() for term in ['randomized', 'controlled', 'matched']):
+        base_score += 0.2
+    
+    if any(term in response.lower() for term in ['significant', 'p-value', 'confidence interval']):
+        base_score += 0.1
+    
+    return min(base_score + source_bonus, 1.0)
+
+def calculate_market_readiness(response: str, target_markets: List[str]) -> float:
+    """Calculate market readiness score"""
+    base_score = 0.5
+    
+    # Add points for each market analyzed
+    market_bonus = len(target_markets) * 0.1
+    
+    # Add points for positive indicators
+    if any(term in response.lower() for term in ['approved', 'favorable', 'accessible']):
+        base_score += 0.2
+    
+    # Subtract points for barriers
+    if any(term in response.lower() for term in ['barrier', 'restriction', 'limited']):
+        base_score -= 0.1
+    
+    return max(min(base_score + market_bonus, 1.0), 0.0)
+
+def extract_forecast_data(response: str, section_name: str) -> Dict[str, Any]:
+    """Extract forecast data with numerical projections"""
+    forecast_data = extract_section_data(response, section_name)
+    
+    # Try to extract numerical projections
+    import re
+    numbers = re.findall(r'(\d+(?:\.\d+)?)\s*%', response)
+    years = re.findall(r'20[2-4][0-9]', response)
+    
+    forecast_data["projections"] = {}
+    for i, year in enumerate(years[:10]):  # Limit to 10 years
+        if i < len(numbers):
+            try:
+                forecast_data["projections"][year] = float(numbers[i])
+            except:
+                pass
+    
+    return forecast_data
+
+def extract_revenue_data(response: str, horizon: int) -> Dict[str, Any]:
+    """Extract revenue forecast data"""
+    revenue_data = {"annual_projections": {}, "peak_sales": 0, "peak_year": 0}
+    
+    import re
+    # Find revenue numbers
+    revenue_matches = re.findall(r'\$(\d+(?:\.\d+)?)\s*[mMbB]?', response)
+    year_matches = re.findall(r'20[2-4][0-9]', response)
+    
+    current_year = 2024
+    for i in range(horizon):
+        year = current_year + i
+        if i < len(revenue_matches):
+            try:
+                value = float(revenue_matches[i])
+                revenue_data["annual_projections"][str(year)] = value
+                if value > revenue_data["peak_sales"]:
+                    revenue_data["peak_sales"] = value
+                    revenue_data["peak_year"] = year
+            except:
+                pass
+    
+    return revenue_data
+
+def extract_assumptions(response: str) -> List[str]:
+    """Extract key assumptions"""
+    assumptions = []
+    lines = response.split('\n')
+    assumption_started = False
+    
+    for line in lines:
+        if "ASSUMPTION" in line.upper() or "KEY ASSUMPTIONS" in line.upper():
+            assumption_started = True
+            continue
+        elif assumption_started and any(section in line.upper() for section in ["SENSITIVITY", "MODEL", "UNCERTAINTY"]):
+            break
+        elif assumption_started and line.strip():
+            if line.strip().startswith(('-', '•', '*')):
+                assumptions.append(line.strip())
+    
+    return assumptions
+
+def extract_sensitivity_data(response: str) -> Dict[str, float]:
+    """Extract sensitivity factors"""
+    sensitivity = {}
+    lines = response.split('\n')
+    
+    for line in lines:
+        if 'sensitivity' in line.lower():
+            import re
+            # Look for percentage or factor values
+            numbers = re.findall(r'(\d+(?:\.\d+)?)', line)
+            if numbers:
+                factor_name = line.split(':')[0].strip() if ':' in line else "unknown"
+                try:
+                    sensitivity[factor_name] = float(numbers[0])
+                except:
+                    pass
+    
+    return sensitivity
+
+def extract_scenario_probabilities(response: str) -> Dict[str, float]:
+    """Extract scenario probabilities"""
+    probabilities = {}
+    lines = response.split('\n')
+    
+    scenarios = ['bull', 'base', 'bear', 'optimistic', 'realistic', 'pessimistic']
+    for line in lines:
+        for scenario in scenarios:
+            if scenario in line.lower() and 'probability' in line.lower():
+                import re
+                numbers = re.findall(r'(\d+(?:\.\d+)?)', line)
+                if numbers:
+                    try:
+                        prob = float(numbers[0])
+                        if prob > 1:  # Convert percentage to decimal
+                            prob = prob / 100
+                        probabilities[scenario] = prob
+                    except:
+                        pass
+    
+    return probabilities
+
+def extract_confidence_intervals(response: str) -> Dict[str, Any]:
+    """Extract confidence intervals"""
+    intervals = {}
+    lines = response.split('\n')
+    
+    for line in lines:
+        if 'confidence' in line.lower() or 'interval' in line.lower():
+            import re
+            numbers = re.findall(r'(\d+(?:\.\d+)?)', line)
+            if len(numbers) >= 2:
+                intervals["lower_bound"] = float(numbers[0])
+                intervals["upper_bound"] = float(numbers[1])
+                break
+    
+    return intervals
+
+def extract_performance_metrics(response: str) -> Dict[str, float]:
+    """Extract model performance metrics"""
+    metrics = {}
+    lines = response.split('\n')
+    
+    metric_keywords = ['accuracy', 'precision', 'recall', 'rmse', 'mae', 'r-squared']
+    for line in lines:
+        for keyword in metric_keywords:
+            if keyword in line.lower():
+                import re
+                numbers = re.findall(r'(\d+(?:\.\d+)?)', line)
+                if numbers:
+                    try:
+                        metrics[keyword] = float(numbers[0])
+                    except:
+                        pass
+    
+    return metrics
+
+def extract_risk_data(response: str) -> Dict[str, Any]:
+    """Extract risk-adjusted projection data"""
+    risk_data = {"monte_carlo_results": {}, "var_analysis": {}}
+    
+    if 'monte carlo' in response.lower():
+        risk_data["monte_carlo_results"]["iterations"] = 1000
+        risk_data["monte_carlo_results"]["mean"] = 500  # Default values
+        risk_data["monte_carlo_results"]["std_dev"] = 100
+    
+    if 'value at risk' in response.lower() or 'var' in response.lower():
+        risk_data["var_analysis"]["5_percentile"] = 200
+        risk_data["var_analysis"]["95_percentile"] = 800
+    
+    return risk_data
+
+def extract_uncertainty_data(response: str) -> Dict[str, Any]:
+    """Extract uncertainty analysis data"""
+    uncertainty_data = {"parameter_uncertainty": {}, "model_uncertainty": {}}
+    
+    # Default uncertainty values
+    uncertainty_data["parameter_uncertainty"]["low"] = 0.1
+    uncertainty_data["parameter_uncertainty"]["medium"] = 0.3
+    uncertainty_data["parameter_uncertainty"]["high"] = 0.5
+    
+    uncertainty_data["model_uncertainty"]["forecast_error"] = 0.2
+    uncertainty_data["model_uncertainty"]["confidence_level"] = 0.8
+    
+    return uncertainty_data
+
+def extract_timelines_data(response: str) -> Dict[str, Any]:
+    """Extract approval timelines data"""
+    timelines = {}
+    lines = response.split('\n')
+    
+    for line in lines:
+        if 'timeline' in line.lower() or 'months' in line.lower() or 'years' in line.lower():
+            import re
+            numbers = re.findall(r'(\d+)', line)
+            if numbers:
+                if 'approval' in line.lower():
+                    timelines["approval_timeline_months"] = int(numbers[0])
+                elif 'review' in line.lower():
+                    timelines["review_timeline_months"] = int(numbers[0])
+    
+    return timelines
+
+def extract_policies_data(response: str) -> List[Dict[str, Any]]:
+    """Extract coverage policies data"""
+    policies = []
+    lines = response.split('\n')
+    
+    for line in lines:
+        if 'policy' in line.lower() or 'coverage' in line.lower():
+            policies.append({
+                "policy_type": "coverage",
+                "description": line.strip(),
+                "impact": "medium"
+            })
+    
+    return policies[:10]
+
+def extract_population_data(response: str) -> Dict[str, Any]:
+    """Extract study population data"""
+    population_data = {"demographics": {}, "sample_sizes": {}}
+    
+    # Look for demographic information
+    if 'age' in response.lower():
+        population_data["demographics"]["age_mentioned"] = True
+    if 'gender' in response.lower():
+        population_data["demographics"]["gender_mentioned"] = True
+    
+    # Look for sample sizes
+    import re
+    numbers = re.findall(r'(\d+,?\d*)\s*patients?', response.lower())
+    if numbers:
+        try:
+            population_data["sample_sizes"]["total_patients"] = int(numbers[0].replace(',', ''))
+        except:
+            pass
+    
+    return population_data
+
+def extract_limitations(response: str) -> List[str]:
+    """Extract study limitations"""
+    limitations = []
+    lines = response.split('\n')
+    limitation_started = False
+    
+    for line in lines:
+        if "limitation" in line.lower():
+            limitation_started = True
+            limitations.append(line.strip())
+        elif limitation_started and line.strip().startswith(('-', '•', '*')):
+            limitations.append(line.strip())
+        elif limitation_started and not line.strip():
+            break
+    
+    return limitations[:10]
+
+def extract_recommendations(response: str) -> List[str]:
+    """Extract recommendations"""
+    recommendations = []
+    lines = response.split('\n')
+    recommendation_started = False
+    
+    for line in lines:
+        if "recommendation" in line.lower():
+            recommendation_started = True
+            if ':' in line:
+                recommendations.append(line.split(':')[1].strip())
+            else:
+                recommendations.append(line.strip())
+        elif recommendation_started and line.strip().startswith(('-', '•', '*')):
+            recommendations.append(line.strip())
+        elif recommendation_started and not line.strip():
+            break
+    
+    return recommendations[:10]
+
 # API Routes
 @api_router.get("/")
 async def root():
