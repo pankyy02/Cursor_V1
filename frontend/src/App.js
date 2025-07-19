@@ -547,6 +547,108 @@ const App = () => {
     }
   };
 
+  // Phase 3: Real-World Evidence Integration Handler Functions
+  const handleRealWorldEvidence = async () => {
+    if (!analysis || !apiKey.trim()) {
+      setError("Please complete therapy area analysis first");
+      return;
+    }
+
+    setLoadingState('rwe', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/real-world-evidence`, {
+        therapy_area: therapyArea,
+        product_name: productName || null,
+        analysis_type: "comprehensive",
+        data_sources: ["registries", "claims", "ehr", "patient_outcomes"],
+        api_key: apiKey
+      });
+
+      setRealWorldEvidence(response.data);
+      setActiveTab("rwe");
+    } catch (error) {
+      console.error("Real-world evidence error:", error);
+      setError(error.response?.data?.detail || "Real-world evidence analysis failed. Please try again.");
+    } finally {
+      setLoadingState('rwe', false);
+    }
+  };
+
+  const handleMarketAccessIntelligence = async () => {
+    if (!analysis || !perplexityKey.trim()) {
+      setError("Please complete analysis and enter Perplexity API key first");
+      return;
+    }
+
+    setLoadingState('market_access', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/market-access-intelligence`, {
+        therapy_area: therapyArea,
+        product_name: productName || null,
+        target_markets: ["US", "EU5", "Japan"],
+        analysis_depth: "comprehensive",
+        api_key: perplexityKey
+      });
+
+      setMarketAccessIntel(response.data);
+      setActiveTab("market_access");
+    } catch (error) {
+      console.error("Market access intelligence error:", error);
+      setError(error.response?.data?.detail || "Market access analysis failed. Please try again.");
+    } finally {
+      setLoadingState('market_access', false);
+    }
+  };
+
+  const handlePredictiveAnalytics = async () => {
+    if (!analysis || !apiKey.trim()) {
+      setError("Please complete therapy area analysis first");
+      return;
+    }
+
+    setLoadingState('predictive', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/predictive-analytics`, {
+        therapy_area: therapyArea,
+        product_name: productName || null,
+        forecast_horizon: 10,
+        model_type: "ml_enhanced",
+        include_rwe: true,
+        api_key: apiKey
+      });
+
+      setPredictiveAnalytics(response.data);
+      setActiveTab("predictive");
+    } catch (error) {
+      console.error("Predictive analytics error:", error);
+      setError(error.response?.data?.detail || "Predictive analytics failed. Please try again.");
+    } finally {
+      setLoadingState('predictive', false);
+    }
+  };
+
+  const handlePhase3Dashboard = async () => {
+    setLoadingState('dashboard', true);
+    setError("");
+
+    try {
+      const response = await axios.get(`${API}/phase3-dashboard`);
+      setPhase3Dashboard(response.data);
+      setActiveTab("dashboard");
+    } catch (error) {
+      console.error("Phase 3 dashboard error:", error);
+      setError(error.response?.data?.detail || "Dashboard data retrieval failed. Please try again.");
+    } finally {
+      setLoadingState('dashboard', false);
+    }
+  };
+
   const loadAnalysis = async (analysisId) => {
     try {
       const response = await axios.get(`${API}/analysis/${analysisId}`);
