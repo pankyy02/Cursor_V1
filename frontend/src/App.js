@@ -234,6 +234,122 @@ const App = () => {
     }
   };
 
+  const handleCreateFinancialModel = async () => {
+    if (!analysis || !apiKey.trim()) {
+      setError("Please complete therapy area analysis first");
+      return;
+    }
+
+    setLoadingState('financial', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/financial-model`, {
+        therapy_area: therapyArea,
+        product_name: productName || null,
+        analysis_id: analysis.id,
+        discount_rate: 0.12,
+        peak_sales_estimate: 1000,
+        patent_expiry_year: 2035,
+        launch_year: 2025,
+        ramp_up_years: 5,
+        monte_carlo_iterations: 1000,
+        api_key: apiKey
+      });
+
+      setFinancialModel(response.data);
+      setActiveTab("financial");
+    } catch (error) {
+      console.error("Financial model error:", error);
+      setError(error.response?.data?.detail || "Financial modeling failed. Please try again.");
+    } finally {
+      setLoadingState('financial', false);
+    }
+  };
+
+  const handleCreateTimeline = async () => {
+    if (!analysis || !perplexityKey.trim()) {
+      setError("Please complete analysis and enter Perplexity API key first");
+      return;
+    }
+
+    setLoadingState('timeline', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/timeline`, {
+        therapy_area: therapyArea,
+        product_name: productName || null,
+        analysis_id: analysis.id,
+        include_competitive_milestones: true,
+        api_key: perplexityKey
+      });
+
+      setTimeline(response.data);
+      setActiveTab("timeline");
+    } catch (error) {
+      console.error("Timeline error:", error);
+      setError(error.response?.data?.detail || "Timeline generation failed. Please try again.");
+    } finally {
+      setLoadingState('timeline', false);
+    }
+  };
+
+  const handleCreateTemplate = async (templateType = "therapy_specific") => {
+    if (!perplexityKey.trim()) {
+      setError("Please enter Perplexity API key for template generation");
+      return;
+    }
+
+    setLoadingState('template', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/custom-template`, {
+        template_type: templateType,
+        therapy_area: therapyArea,
+        region: "Global",
+        api_key: perplexityKey
+      });
+
+      setCustomTemplate(response.data);
+      setActiveTab("template");
+    } catch (error) {
+      console.error("Template error:", error);
+      setError(error.response?.data?.detail || "Template generation failed. Please try again.");
+    } finally {
+      setLoadingState('template', false);
+    }
+  };
+
+  const handleAdvancedVisualization = async (vizType, dataSource) => {
+    if (!analysis) {
+      setError("Please complete analysis first");
+      return;
+    }
+
+    setLoadingState('visualization', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/advanced-visualization`, null, {
+        params: {
+          visualization_type: vizType,
+          data_source: dataSource,
+          analysis_id: analysis.id
+        }
+      });
+
+      setAdvancedViz(response.data);
+      setActiveTab("visualization");
+    } catch (error) {
+      console.error("Visualization error:", error);
+      setError(error.response?.data?.detail || "Visualization generation failed. Please try again.");
+    } finally {
+      setLoadingState('visualization', false);
+    }
+  };
+
   const handleEnsembleAnalysis = async () => {
     if (!apiKey.trim()) {
       setError("Please enter your Claude API key");
