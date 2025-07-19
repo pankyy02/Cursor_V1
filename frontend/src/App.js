@@ -126,7 +126,7 @@ const App = () => {
       return;
     }
 
-    setIsLoading(true);
+    setLoadingState('competitive', true);
     setError("");
 
     try {
@@ -142,7 +142,7 @@ const App = () => {
       console.error("Competitive analysis error:", error);
       setError(error.response?.data?.detail || "Competitive analysis failed. Please try again.");
     } finally {
-      setIsLoading(false);
+      setLoadingState('competitive', false);
     }
   };
 
