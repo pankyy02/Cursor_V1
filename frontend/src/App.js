@@ -2843,7 +2843,7 @@ const App = () => {
             )}
 
             {/* Welcome Message */}
-            {!analysis && !funnel && !competitiveData && !scenarioModels && clinicalTrials.length === 0 && !perplexityResults && !companyIntelligence && !ensembleResult && !financialModel && !timeline && !customTemplate && !advancedViz && (
+            {!analysis && !funnel && !competitiveData && !scenarioModels && clinicalTrials.length === 0 && !perplexityResults && !companyIntelligence && !ensembleResult && !financialModel && !timeline && !customTemplate && !advancedViz && !realWorldEvidence && !marketAccessIntel && !predictiveAnalytics && !phase3Dashboard && (
               <div className="bg-white rounded-xl shadow-lg p-8">
                 <div className="text-center">
                   <div className="mb-6">
