@@ -31,3 +31,9 @@ matplotlib
 seaborn
 plotly
 requests
+beautifulsoup4
+selenium
+webdriver-manager
+lxml
+PyPDF2
+pdfplumber
