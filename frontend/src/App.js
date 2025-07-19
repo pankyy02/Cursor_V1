@@ -1355,6 +1355,70 @@ const App = () => {
                 </div>
               )}
 
+              {/* Phase 4: Subscription & Account Management */}
+              {isAuthenticated && (
+                <div className="mt-4 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
+                  <h4 className="text-sm font-semibold text-indigo-900 mb-2">🎯 Account & Subscription</h4>
+                  
+                  <div className="space-y-2">
+                    <div className="text-xs text-gray-600 mb-2">
+                      Current Plan: <span className="font-medium text-indigo-700">
+                        {currentUser?.subscription_tier === 'free' ? 'Free Plan' : 
+                         currentUser?.subscription_tier?.charAt(0).toUpperCase() + currentUser?.subscription_tier?.slice(1)}
+                      </span>
+                    </div>
+                    
+                    {currentUser?.subscription_tier === 'free' && (
+                      <button
+                        onClick={() => setShowPaymentModal(true)}
+                        className="w-full px-3 py-2 text-xs rounded font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-colors"
+                      >
+                        ⭐ Upgrade to Premium
+                      </button>
+                    )}
+                    
+                    {currentUser?.subscription_tier === 'enterprise' && executiveDashboard && (
+                      <button
+                        onClick={() => setActiveTab("executive")}
+                        className="w-full px-3 py-2 text-xs rounded font-medium bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+                      >
+                        📊 Executive Dashboard
+                      </button>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-indigo-600 mt-2">Unlock advanced features with premium subscriptions</p>
+                </div>
+              )}
+
+              {!isAuthenticated && (
+                <div className="mt-4 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
+                  <h4 className="text-sm font-semibold text-yellow-900 mb-2">🔐 Sign Up for More</h4>
+                  <p className="text-xs text-yellow-700 mb-2">Create an account to access:</p>
+                  <ul className="text-xs text-yellow-600 space-y-1 mb-3">
+                    <li>• Save and organize analyses</li>
+                    <li>• Access history and templates</li>
+                    <li>• Premium features and workflows</li>
+                    <li>• Automated reporting</li>
+                  </ul>
+                  
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setShowRegisterModal(true)}
+                      className="w-full px-3 py-2 text-xs rounded font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                    >
+                      🚀 Create Free Account
+                    </button>
+                    <button
+                      onClick={() => setShowLoginModal(true)}
+                      className="w-full px-3 py-2 text-xs rounded font-medium bg-gray-600 hover:bg-gray-700 text-white transition-colors"
+                    >
+                      👤 Login
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Export Options */}
               {analysis && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
