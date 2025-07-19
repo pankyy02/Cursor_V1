@@ -225,6 +225,45 @@ const App = () => {
     }
   };
 
+  const handleEnsembleAnalysis = async () => {
+    if (!apiKey.trim()) {
+      setError("Please enter your Claude API key");
+      return;
+    }
+    if (!perplexityKey.trim()) {
+      setError("Please enter your Perplexity API key for ensemble analysis");
+      return;
+    }
+    if (!therapyArea.trim()) {
+      setError("Please enter a therapy area");
+      return;
+    }
+
+    setLoadingState('ensemble', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/ensemble-analysis`, {
+        therapy_area: therapyArea,
+        product_name: productName || null,
+        analysis_type: "comprehensive",
+        claude_api_key: apiKey,
+        perplexity_api_key: perplexityKey,
+        gemini_api_key: geminiKey || null,
+        use_gemini: geminiKey.trim().length > 0,
+        confidence_threshold: 0.7
+      });
+
+      setEnsembleResult(response.data);
+      setActiveTab("ensemble");
+    } catch (error) {
+      console.error("Ensemble analysis error:", error);
+      setError(error.response?.data?.detail || "Ensemble analysis failed. Please check your API keys.");
+    } finally {
+      setLoadingState('ensemble', false);
+    }
+  };
+
   const handleCompanyIntelligence = async () => {
     if (!perplexityKey.trim()) {
       setError("Please enter your Perplexity API key for company intelligence");
