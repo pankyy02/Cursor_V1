@@ -3161,6 +3161,150 @@ const App = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* Phase 4: Executive Dashboard Tab */}
+                  {activeTab === "executive" && isAuthenticated && executiveDashboard && (
+                    <div className="space-y-6">
+                      <div className="mb-4">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">👑 Executive Dashboard</h3>
+                        <p className="text-gray-600">
+                          Strategic insights and KPIs for {currentUser?.first_name} at {currentUser?.company || 'your organization'}
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 text-sm rounded">
+                            🎯 Enterprise Level
+                          </span>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded">
+                            📊 Real-time Data
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Executive KPIs */}
+                      <div className="grid md:grid-cols-4 gap-4">
+                        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                          <div className="text-sm text-gray-600">Total Analyses</div>
+                          <div className="text-2xl font-bold text-green-600">
+                            {executiveDashboard.summary?.total_analyses || 0}
+                          </div>
+                        </div>
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                          <div className="text-sm text-gray-600">Success Rate</div>
+                          <div className="text-2xl font-bold text-blue-600">
+                            {executiveDashboard.trends?.success_rate?.toFixed(1) || 0}%
+                          </div>
+                        </div>
+                        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                          <div className="text-sm text-gray-600">Avg Confidence</div>
+                          <div className="text-2xl font-bold text-purple-600">
+                            {executiveDashboard.trends?.avg_confidence?.toFixed(1) || 0}%
+                          </div>
+                        </div>
+                        <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                          <div className="text-sm text-gray-600">Time Savings</div>
+                          <div className="text-2xl font-bold text-orange-600">
+                            {executiveDashboard.trends?.time_savings?.toFixed(1) || 0}%
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Strategic Analysis Types */}
+                      <div className="grid md:grid-cols-3 gap-6">
+                        <div className="bg-white rounded-lg p-4 border">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">🔬 Core Analytics</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Therapy Analyses</span>
+                              <span className="font-medium">{executiveDashboard.summary?.total_analyses || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Growth Rate</span>
+                              <span className="font-medium text-green-600">+{executiveDashboard.trends?.analyses_growth?.toFixed(1) || 0}%</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white rounded-lg p-4 border">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">📊 Advanced Features</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">RWE Studies</span>
+                              <span className="font-medium">{executiveDashboard.summary?.rwe_analyses || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Market Access</span>
+                              <span className="font-medium">{executiveDashboard.summary?.market_access_analyses || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Predictive Models</span>
+                              <span className="font-medium">{executiveDashboard.summary?.predictive_analyses || 0}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white rounded-lg p-4 border">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">👑 Subscription Status</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Current Plan</span>
+                              <span className="font-medium capitalize">{executiveDashboard.subscription?.tier || 'Enterprise'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Status</span>
+                              <span className={`font-medium ${
+                                executiveDashboard.subscription?.status === 'active' ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {executiveDashboard.subscription?.status || 'Active'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Recent Strategic Activity */}
+                      <div className="bg-gray-50 rounded-lg p-4 border">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-3">🕒 Recent Strategic Activity</h4>
+                        <div className="space-y-3">
+                          {executiveDashboard.recent_activity?.slice(0, 5).map((activity, index) => (
+                            <div key={index} className="flex items-center justify-between bg-white p-3 rounded border">
+                              <div>
+                                <div className="font-medium text-sm">{activity.therapy_area}</div>
+                                {activity.product_name && (
+                                  <div className="text-xs text-blue-600">{activity.product_name}</div>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(activity.created_at).toLocaleDateString()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Strategic Recommendations */}
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-3">💡 Strategic Recommendations</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <h5 className="font-medium text-sm mb-2">Performance Optimization</h5>
+                            <ul className="space-y-1 text-sm text-gray-700">
+                              <li>• Focus on high-confidence analyses (87%+ confidence)</li>
+                              <li>• Expand RWE studies for competitive advantage</li>
+                              <li>• Leverage predictive models for strategic planning</li>
+                            </ul>
+                          </div>
+                          <div>
+                            <h5 className="font-medium text-sm mb-2">Market Intelligence</h5>
+                            <ul className="space-y-1 text-sm text-gray-700">
+                              <li>• Monitor competitive landscape changes</li>
+                              <li>• Track regulatory pathway developments</li>
+                              <li>• Optimize market access strategies</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
