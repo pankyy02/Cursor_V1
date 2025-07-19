@@ -5317,6 +5317,457 @@ async def get_phase3_dashboard():
         logger.error(f"Phase 3 dashboard error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Dashboard data retrieval failed: {str(e)}")
 
+# ========================================
+# Phase 4: User Management & Authentication API Endpoints
+# ========================================
+
+@api_router.post("/auth/register")
+async def register_user(user_data: UserRegistration):
+    """Register a new user"""
+    try:
+        # Check if user already exists
+        existing_user = await db.users.find_one({"email": user_data.email})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        # Hash password
+        password_hash = hash_password(user_data.password)
+        
+        # Create user
+        user = User(
+            email=user_data.email,
+            first_name=user_data.first_name,
+            last_name=user_data.last_name,
+            company=user_data.company,
+            role=user_data.role
+        )
+        
+        # Store user in database
+        await db.users.insert_one(user.dict())
+        
+        # Store password separately
+        await db.user_passwords.insert_one({
+            "user_id": user.id,
+            "password_hash": password_hash,
+            "created_at": datetime.utcnow()
+        })
+        
+        # Create user profile
+        profile = UserProfile(
+            user_id=user.id,
+            preferences={
+                "theme": "light",
+                "notifications_enabled": True,
+                "auto_save": True
+            },
+            notification_settings={
+                "email_alerts": True,
+                "browser_notifications": False,
+                "weekly_reports": True
+            }
+        )
+        await db.user_profiles.insert_one(profile.dict())
+        
+        return {
+            "message": "User registered successfully",
+            "user_id": user.id,
+            "email": user.email
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"User registration error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Registration failed")
+
+@api_router.post("/auth/login")
+async def login_user(login_data: UserLogin, request: Request):
+    """Authenticate user and create session"""
+    try:
+        # Find user
+        user = await db.users.find_one({"email": login_data.email})
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Get password hash
+        password_data = await db.user_passwords.find_one({"user_id": user["id"]})
+        if not password_data:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Verify password
+        if not verify_password(login_data.password, password_data["password_hash"]):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Create session
+        session_token = generate_session_token()
+        expires_at = datetime.utcnow() + timedelta(hours=SESSION_EXPIRE_HOURS)
+        
+        session = UserSession(
+            user_id=user["id"],
+            session_token=session_token,
+            expires_at=expires_at,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent")
+        )
+        
+        await db.user_sessions.insert_one(session.dict())
+        
+        # Update last login
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"last_login": datetime.utcnow()}}
+        )
+        
+        return {
+            "access_token": session_token,
+            "token_type": "bearer",
+            "expires_in": SESSION_EXPIRE_HOURS * 3600,
+            "user": {
+                "id": user["id"],
+                "email": user["email"],
+                "first_name": user["first_name"],
+                "last_name": user["last_name"],
+                "subscription_tier": user.get("subscription_tier", "free")
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"User login error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Login failed")
+
+@api_router.post("/auth/logout")
+async def logout_user(current_user: User = Depends(get_current_user)):
+    """Logout user and invalidate session"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        # Find and delete current session
+        await db.user_sessions.delete_many({"user_id": current_user.id})
+        
+        return {"message": "Logged out successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"User logout error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Logout failed")
+
+@api_router.get("/auth/profile")
+async def get_user_profile(current_user: User = Depends(get_current_user)):
+    """Get current user profile"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        # Get user profile
+        profile = await db.user_profiles.find_one({"user_id": current_user.id})
+        if not profile:
+            # Create default profile if doesn't exist
+            profile = UserProfile(user_id=current_user.id)
+            await db.user_profiles.insert_one(profile.dict())
+        
+        return {
+            "user": current_user.dict(),
+            "profile": profile
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get user profile error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get profile")
+
+# ========================================
+# Phase 4: Payment & Subscription API Endpoints
+# ========================================
+
+@api_router.get("/subscriptions/plans")
+async def get_subscription_plans():
+    """Get available subscription plans"""
+    return {"plans": list(SUBSCRIPTION_PLANS.values())}
+
+@api_router.post("/payments/checkout/session")
+async def create_checkout_session(request: Request):
+    """Create Stripe checkout session"""
+    try:
+        request_data = await request.json()
+        
+        # Get the origin URL from request
+        origin_url = request.headers.get("origin") or "http://localhost:3000"
+        
+        # Validate package selection
+        package_id = request_data.get("package_id")
+        if not package_id or package_id not in SUBSCRIPTION_PLANS:
+            raise HTTPException(status_code=400, detail="Invalid subscription package")
+        
+        plan = SUBSCRIPTION_PLANS[package_id]
+        
+        # Initialize Stripe checkout
+        webhook_url = f"{origin_url}/api/webhook/stripe"
+        stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url=webhook_url)
+        
+        # Build success and cancel URLs
+        success_url = f"{origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{origin_url}/payment/cancelled"
+        
+        # Create checkout session request
+        checkout_request = CheckoutSessionRequest(
+            amount=plan["price"],
+            currency="usd",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                "package_id": package_id,
+                "package_name": plan["name"],
+                "source": "web_checkout"
+            }
+        )
+        
+        # Create checkout session
+        session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_request)
+        
+        # Store payment transaction
+        payment_transaction = PaymentTransaction(
+            stripe_session_id=session.session_id,
+            amount=plan["price"],
+            currency="usd",
+            subscription_tier=package_id,
+            metadata={
+                "package_id": package_id,
+                "package_name": plan["name"],
+                "origin_url": origin_url
+            }
+        )
+        
+        await db.payment_transactions.insert_one(payment_transaction.dict())
+        
+        return {
+            "url": session.url,
+            "session_id": session.session_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Create checkout session error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create checkout session")
+
+@api_router.get("/payments/checkout/status/{session_id}")
+async def get_checkout_status(session_id: str):
+    """Get checkout session status"""
+    try:
+        # Initialize Stripe checkout
+        stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url="")
+        
+        # Get checkout status
+        checkout_status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
+        
+        # Find payment transaction
+        payment = await db.payment_transactions.find_one({"stripe_session_id": session_id})
+        if not payment:
+            raise HTTPException(status_code=404, detail="Payment transaction not found")
+        
+        # Update payment status if changed
+        if payment["stripe_payment_status"] != checkout_status.payment_status:
+            await db.payment_transactions.update_one(
+                {"stripe_session_id": session_id},
+                {
+                    "$set": {
+                        "stripe_payment_status": checkout_status.payment_status,
+                        "payment_status": "completed" if checkout_status.payment_status == "paid" else "pending"
+                    }
+                }
+            )
+            
+            # If payment completed, upgrade user subscription
+            if checkout_status.payment_status == "paid" and payment["payment_status"] != "completed":
+                package_id = payment["metadata"].get("package_id")
+                if package_id:
+                    # Find user and update subscription (placeholder - would need user context)
+                    # For now, we'll handle this in the frontend after successful payment
+                    await db.payment_transactions.update_one(
+                        {"stripe_session_id": session_id},
+                        {"$set": {"completed_at": datetime.utcnow()}}
+                    )
+        
+        return {
+            "status": checkout_status.status,
+            "payment_status": checkout_status.payment_status,
+            "amount_total": checkout_status.amount_total,
+            "currency": checkout_status.currency,
+            "metadata": checkout_status.metadata
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get checkout status error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get checkout status")
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhooks"""
+    try:
+        body = await request.body()
+        stripe_signature = request.headers.get("stripe-signature")
+        
+        # Initialize Stripe checkout
+        stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url="")
+        
+        # Handle webhook
+        webhook_response = await stripe_checkout.handle_webhook(body, stripe_signature)
+        
+        if webhook_response.event_type == "checkout.session.completed":
+            # Update payment transaction
+            await db.payment_transactions.update_one(
+                {"stripe_session_id": webhook_response.session_id},
+                {
+                    "$set": {
+                        "payment_status": "completed",
+                        "stripe_payment_status": webhook_response.payment_status,
+                        "completed_at": datetime.utcnow()
+                    }
+                }
+            )
+        
+        return {"received": True}
+        
+    except Exception as e:
+        logger.error(f"Stripe webhook error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Webhook processing failed")
+
+# ========================================
+# Phase 4: Automated Workflows API Endpoints
+# ========================================
+
+@api_router.post("/workflows", response_model=AutomatedWorkflow)
+async def create_workflow(workflow_data: dict, current_user: User = Depends(get_current_user)):
+    """Create automated workflow"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        if not await require_subscription(current_user, "professional"):
+            raise HTTPException(status_code=403, detail="Professional subscription required")
+        
+        workflow = AutomatedWorkflow(
+            user_id=current_user.id,
+            name=workflow_data["name"],
+            description=workflow_data.get("description"),
+            workflow_type=workflow_data["workflow_type"],
+            schedule=workflow_data["schedule"],
+            parameters=workflow_data.get("parameters", {})
+        )
+        
+        await db.automated_workflows.insert_one(workflow.dict())
+        
+        return workflow
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Create workflow error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create workflow")
+
+@api_router.get("/workflows")
+async def get_user_workflows(current_user: User = Depends(get_current_user)):
+    """Get user's automated workflows"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        workflows = await db.automated_workflows.find(
+            {"user_id": current_user.id}
+        ).sort("created_at", -1).to_list(50)
+        
+        return {"workflows": workflows}
+        
+    except Exception as e:
+        logger.error(f"Get workflows error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get workflows")
+
+@api_router.post("/alerts", response_model=AlertRule)
+async def create_alert_rule(alert_data: dict, current_user: User = Depends(get_current_user)):
+    """Create alert rule"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        if not await require_subscription(current_user, "professional"):
+            raise HTTPException(status_code=403, detail="Professional subscription required")
+        
+        alert = AlertRule(
+            user_id=current_user.id,
+            name=alert_data["name"],
+            description=alert_data.get("description"),
+            rule_type=alert_data["rule_type"],
+            conditions=alert_data["conditions"],
+            notification_channels=alert_data.get("notification_channels", ["email"])
+        )
+        
+        await db.alert_rules.insert_one(alert.dict())
+        
+        return alert
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Create alert error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create alert")
+
+@api_router.get("/dashboard/executive")
+async def get_executive_dashboard(current_user: User = Depends(get_current_user)):
+    """Get executive dashboard with KPIs and strategic insights"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        if not await require_subscription(current_user, "enterprise"):
+            raise HTTPException(status_code=403, detail="Enterprise subscription required")
+        
+        # Get user's analysis summary
+        total_analyses = await db.therapy_analyses.count_documents({"user_id": current_user.id})
+        rwe_analyses = await db.rwe_analyses.count_documents({"user_id": current_user.id})
+        market_access_analyses = await db.market_access_analyses.count_documents({"user_id": current_user.id})
+        predictive_analyses = await db.predictive_analyses.count_documents({"user_id": current_user.id})
+        
+        # Get recent activity
+        recent_analyses = await db.therapy_analyses.find(
+            {"user_id": current_user.id}
+        ).sort("created_at", -1).limit(10).to_list(10)
+        
+        # Calculate trends (placeholder - would implement proper trending)
+        trends = {
+            "analyses_growth": 15.2,  # % growth
+            "success_rate": 92.5,     # % success rate
+            "avg_confidence": 87.3,   # Average confidence score
+            "time_savings": 78.9      # % time savings
+        }
+        
+        return {
+            "summary": {
+                "total_analyses": total_analyses,
+                "rwe_analyses": rwe_analyses,
+                "market_access_analyses": market_access_analyses,
+                "predictive_analyses": predictive_analyses
+            },
+            "recent_activity": recent_analyses,
+            "trends": trends,
+            "subscription": {
+                "tier": current_user.subscription_tier,
+                "status": current_user.subscription_status
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Executive dashboard error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get executive dashboard")
+
 # Include the router in the main app
 app.include_router(api_router)
 
