@@ -45,6 +45,12 @@ const App = () => {
   const [timeline, setTimeline] = useState(null);
   const [customTemplate, setCustomTemplate] = useState(null);
   const [advancedViz, setAdvancedViz] = useState(null);
+  
+  // Phase 3: Real-World Evidence & Market Access state variables
+  const [realWorldEvidence, setRealWorldEvidence] = useState(null);
+  const [marketAccessIntel, setMarketAccessIntel] = useState(null);
+  const [predictiveAnalytics, setPredictiveAnalytics] = useState(null);
+  const [phase3Dashboard, setPhase3Dashboard] = useState(null);
 
   const setLoadingState = (operation, isLoading) => {
     setLoadingStates(prev => ({
