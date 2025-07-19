@@ -19,6 +19,10 @@ const App = () => {
     search: false,
     company: false,
     ensemble: false,
+    financial: false,
+    timeline: false,
+    template: false,
+    visualization: false,
     export: false
   });
   const [analysis, setAnalysis] = useState(null);
