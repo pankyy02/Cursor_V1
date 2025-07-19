@@ -1124,6 +1124,324 @@ const App = () => {
                 </div>
 
                 <div className="p-6">
+                  {/* Financial Model Tab */}
+                  {activeTab === "financial" && financialModel && (
+                    <div className="space-y-6">
+                      <div className="mb-4">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">💰 Advanced Financial Model</h3>
+                        <p className="text-gray-600">
+                          NPV, IRR, Monte Carlo analysis for {financialModel.therapy_area}
+                          {financialModel.product_name && <span className="font-medium"> - {financialModel.product_name}</span>}
+                        </p>
+                      </div>
+
+                      {/* Key Metrics */}
+                      <div className="grid md:grid-cols-4 gap-4">
+                        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                          <div className="text-sm text-gray-600">NPV</div>
+                          <div className="text-2xl font-bold text-green-600">
+                            ${financialModel.npv_analysis?.npv?.toFixed(0) || 0}M
+                          </div>
+                        </div>
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                          <div className="text-sm text-gray-600">IRR</div>
+                          <div className="text-2xl font-bold text-blue-600">
+                            {financialModel.irr_analysis?.irr?.toFixed(1) || 0}%
+                          </div>
+                        </div>
+                        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                          <div className="text-sm text-gray-600">Success Probability</div>
+                          <div className="text-2xl font-bold text-purple-600">
+                            {financialModel.monte_carlo_results?.risk_metrics?.probability_of_success?.toFixed(0) || 0}%
+                          </div>
+                        </div>
+                        <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                          <div className="text-sm text-gray-600">Payback Period</div>
+                          <div className="text-2xl font-bold text-orange-600">
+                            {financialModel.npv_analysis?.payback_period || 'N/A'} years
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Financial Projections Chart */}
+                      {financialModel.visualization_data?.cash_flow_chart && (
+                        <div className="bg-gray-50 rounded-lg p-4 border">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4">📈 Cash Flow Projections</h4>
+                          <PlotlyChart 
+                            data={financialModel.visualization_data.cash_flow_chart} 
+                            id={`cashflow-chart-${financialModel.id}`}
+                          />
+                        </div>
+                      )}
+
+                      {/* Monte Carlo Results */}
+                      {financialModel.visualization_data?.monte_carlo_chart && (
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4">🎲 Monte Carlo Simulation</h4>
+                          <PlotlyChart 
+                            data={financialModel.visualization_data.monte_carlo_chart} 
+                            id={`montecarlo-chart-${financialModel.id}`}
+                          />
+                        </div>
+                      )}
+
+                      {/* Sensitivity Analysis */}
+                      {financialModel.visualization_data?.npv_sensitivity_chart && (
+                        <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4">🌪️ Sensitivity Analysis</h4>
+                          <PlotlyChart 
+                            data={financialModel.visualization_data.npv_sensitivity_chart} 
+                            id={`sensitivity-chart-${financialModel.id}`}
+                          />
+                        </div>
+                      )}
+
+                      {/* Risk Metrics */}
+                      <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-3">⚠️ Risk Assessment</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900 mb-2">Key Risk Factors:</div>
+                            {financialModel.risk_metrics?.key_risk_factors?.map((factor, index) => (
+                              <div key={index} className="text-sm text-gray-700">• {factor}</div>
+                            ))}
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900 mb-2">Risk Level:</div>
+                            <div className={`inline-block px-3 py-1 rounded text-sm ${
+                              financialModel.risk_metrics?.npv_risk === 'High' ? 'bg-red-100 text-red-800' :
+                              financialModel.risk_metrics?.npv_risk === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {financialModel.risk_metrics?.npv_risk || 'Medium'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Timeline Tab */}
+                  {activeTab === "timeline" && timeline && (
+                    <div className="space-y-6">
+                      <div className="mb-4">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">📅 Interactive Timeline</h3>
+                        <p className="text-gray-600">
+                          Development and competitive milestones for {timeline.therapy_area}
+                          {timeline.product_name && <span className="font-medium"> - {timeline.product_name}</span>}
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded">
+                            📋 {timeline.milestones?.length || 0} Milestones
+                          </span>
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 text-sm rounded">
+                            🏆 {timeline.competitive_milestones?.length || 0} Competitive Events
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Timeline Visualization */}
+                      {timeline.visualization_data?.timeline_chart && (
+                        <div className="bg-gray-50 rounded-lg p-4 border">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4">📊 Timeline Visualization</h4>
+                          <PlotlyChart 
+                            data={timeline.visualization_data.timeline_chart} 
+                            id={`timeline-chart-${timeline.id}`}
+                          />
+                        </div>
+                      )}
+
+                      {/* Regulatory Timeline */}
+                      {timeline.regulatory_timeline?.timeline && (
+                        <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4">🏛️ Regulatory Timeline</h4>
+                          <div className="space-y-2">
+                            {timeline.regulatory_timeline.timeline.map((phase, index) => (
+                              <div key={index} className="flex justify-between items-center p-2 bg-white rounded">
+                                <div>
+                                  <div className="font-medium text-sm">{phase.phase}</div>
+                                  <div className="text-xs text-gray-600">{phase.description}</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-medium">{phase.start_date}</div>
+                                  {phase.duration_months > 0 && (
+                                    <div className="text-xs text-gray-500">{phase.duration_months} months</div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Key Milestones */}
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">📋 Key Milestones</h4>
+                          <div className="space-y-2">
+                            {timeline.milestones?.slice(0, 5).map((milestone, index) => (
+                              <div key={index} className="bg-white rounded p-2">
+                                <div className="flex justify-between items-start">
+                                  <div className="text-sm font-medium">{milestone.title}</div>
+                                  <div className="text-xs text-gray-500">{milestone.date}</div>
+                                </div>
+                                <div className={`text-xs mt-1 px-2 py-1 rounded inline-block ${
+                                  milestone.type === 'clinical' ? 'bg-blue-100 text-blue-800' :
+                                  milestone.type === 'regulatory' ? 'bg-red-100 text-red-800' :
+                                  milestone.type === 'commercial' ? 'bg-green-100 text-green-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {milestone.type}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">🏆 Competitive Events</h4>
+                          <div className="space-y-2">
+                            {timeline.competitive_milestones?.slice(0, 5).map((milestone, index) => (
+                              <div key={index} className="bg-white rounded p-2">
+                                <div className="flex justify-between items-start">
+                                  <div className="text-sm font-medium">{milestone.title}</div>
+                                  <div className="text-xs text-gray-500">{milestone.date}</div>
+                                </div>
+                                <div className="text-xs text-purple-600 mt-1">Competitive</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Custom Template Tab */}
+                  {activeTab === "template" && customTemplate && (
+                    <div className="space-y-6">
+                      <div className="mb-4">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">📋 Custom Analysis Template</h3>
+                        <p className="text-gray-600">
+                          {customTemplate.template_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} template
+                          {customTemplate.therapy_area && <span className="font-medium"> for {customTemplate.therapy_area}</span>}
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <span className="px-2 py-1 bg-orange-100 text-orange-800 text-sm rounded">
+                            📄 {customTemplate.sections?.length || 0} Sections
+                          </span>
+                          <span className="px-2 py-1 bg-green-100 text-green-800 text-sm rounded">
+                            🌍 {customTemplate.region}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Template Sections */}
+                      <div className="space-y-4">
+                        {customTemplate.sections?.map((section, index) => (
+                          <div key={index} className={`rounded-lg p-4 border ${
+                            section.type === 'clinical' ? 'bg-blue-50 border-blue-200' :
+                            section.type === 'regulatory' ? 'bg-red-50 border-red-200' :
+                            section.type === 'market' ? 'bg-green-50 border-green-200' :
+                            section.type === 'financial' ? 'bg-yellow-50 border-yellow-200' :
+                            'bg-gray-50 border-gray-200'
+                          }`}>
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="text-lg font-semibold text-gray-900">{section.title}</h4>
+                              <div className="flex gap-2">
+                                {section.required && (
+                                  <span className="px-2 py-1 bg-red-100 text-red-600 text-xs rounded">Required</span>
+                                )}
+                                <span className={`px-2 py-1 text-xs rounded ${
+                                  section.type === 'clinical' ? 'bg-blue-100 text-blue-800' :
+                                  section.type === 'regulatory' ? 'bg-red-100 text-red-800' :
+                                  section.type === 'market' ? 'bg-green-100 text-green-800' :
+                                  section.type === 'financial' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {section.type}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                              {section.content}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Template Metadata */}
+                      <div className="bg-gray-50 rounded-lg p-4 border">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-3">📊 Template Information</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-sm text-gray-600">Word Count</div>
+                            <div className="font-medium">{customTemplate.template_data?.word_count || 0}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-gray-600">Generated By</div>
+                            <div className="font-medium">{customTemplate.template_data?.generated_by || 'AI'}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Advanced Visualization Tab */}
+                  {activeTab === "visualization" && advancedViz && (
+                    <div className="space-y-6">
+                      <div className="mb-4">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">🎯 Advanced Visualization</h3>
+                        <p className="text-gray-600">
+                          {advancedViz.visualization_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} 
+                          visualization from {advancedViz.data_source} data
+                        </p>
+                      </div>
+
+                      {/* Visualization Display */}
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 border border-purple-200">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4">📈 Interactive Visualization</h4>
+                        {advancedViz.chart_data && !advancedViz.chart_data.includes('"error"') ? (
+                          <PlotlyChart 
+                            data={advancedViz.chart_data} 
+                            id={`advanced-viz-${Date.now()}`}
+                          />
+                        ) : (
+                          <div className="text-center py-8 text-gray-600">
+                            <div className="text-4xl mb-2">📊</div>
+                            <div>Visualization not available</div>
+                            <div className="text-sm mt-1">
+                              {advancedViz.chart_data?.includes('"error"') ? 
+                                'Error generating visualization' : 
+                                'Chart data processing...'
+                              }
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Visualization Info */}
+                      <div className="bg-gray-50 rounded-lg p-4 border">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-3">ℹ️ Visualization Details</h4>
+                        <div className="grid md:grid-cols-3 gap-4">
+                          <div>
+                            <div className="text-sm text-gray-600">Type</div>
+                            <div className="font-medium">{advancedViz.visualization_type}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-gray-600">Data Source</div>
+                            <div className="font-medium">{advancedViz.data_source}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-gray-600">Generated</div>
+                            <div className="font-medium">
+                              {new Date(advancedViz.generated_at).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Multi-Model Ensemble Analysis Tab */}
                   {activeTab === "ensemble" && ensembleResult && (
                     <div className="space-y-6">
