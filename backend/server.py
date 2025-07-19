@@ -52,6 +52,68 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
+class FinancialModelRequest(BaseModel):
+    therapy_area: str
+    product_name: Optional[str] = None
+    analysis_id: str
+    discount_rate: float = 0.12
+    peak_sales_estimate: float = 1000  # millions
+    patent_expiry_year: int = 2035
+    launch_year: int = 2025
+    ramp_up_years: int = 5
+    monte_carlo_iterations: int = 1000
+    api_key: str
+
+class FinancialModel(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    therapy_area: str
+    product_name: Optional[str]
+    analysis_id: str
+    npv_analysis: Dict[str, Any]
+    irr_analysis: Dict[str, Any]
+    monte_carlo_results: Dict[str, Any]
+    peak_sales_distribution: Dict[str, Any]
+    sensitivity_analysis: Dict[str, Any]
+    financial_projections: List[Dict[str, Any]]
+    risk_metrics: Dict[str, Any]
+    visualization_data: Dict[str, Any]
+    assumptions: Dict[str, Any]
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class TimelineRequest(BaseModel):
+    therapy_area: str
+    product_name: Optional[str] = None
+    analysis_id: str
+    include_competitive_milestones: bool = True
+    api_key: str
+
+class Timeline(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    therapy_area: str
+    product_name: Optional[str]
+    analysis_id: str
+    milestones: List[Dict[str, Any]]
+    competitive_milestones: List[Dict[str, Any]]
+    regulatory_timeline: Dict[str, Any]
+    visualization_data: Dict[str, Any]
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class TemplateRequest(BaseModel):
+    template_type: str  # "therapy_specific", "regulatory", "kol_interview"
+    therapy_area: Optional[str] = None
+    region: Optional[str] = None
+    api_key: str
+
+class CustomTemplate(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    template_type: str
+    therapy_area: Optional[str]
+    region: Optional[str]
+    template_data: Dict[str, Any]
+    sections: List[Dict[str, Any]]
+    customization_options: Dict[str, Any]
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class EnsembleAnalysisRequest(BaseModel):
     therapy_area: str
     product_name: Optional[str] = None
