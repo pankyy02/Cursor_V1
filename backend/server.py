@@ -1047,10 +1047,11 @@ async def generate_patient_flow_funnel(request: PatientFlowFunnelRequest):
             request.api_key
         )
         
-        # Create visualization data
+        # Create visualization data with context
+        product_name = analysis.get('product_name', '')
         visualization_data = {
             "funnel_chart": create_funnel_chart(parsed_response.get("funnel_stages", [])),
-            "scenario_chart": create_scenario_comparison_chart(scenario_models)
+            "scenario_chart": create_scenario_comparison_chart(scenario_models, request.therapy_area, product_name)
         }
         
         if analysis.get('competitive_landscape'):
