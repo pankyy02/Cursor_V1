@@ -5695,7 +5695,7 @@ async def apple_token_auth(request: Request):
             try:
                 # For development, we decode without verification
                 # In production, implement proper signature verification
-                decoded_token = jwt.decode(apple_id_token, options={"verify_signature": False})
+                decoded_token = jwt.decode(apple_id_token, verify=False)
                 user_info = {
                     'email': decoded_token.get('email'),
                     'sub': decoded_token.get('sub'),  # Apple user ID
