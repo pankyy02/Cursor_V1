@@ -10,6 +10,14 @@ const App = () => {
   const [therapyArea, setTherapyArea] = useState("");
   const [productName, setProductName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStates, setLoadingStates] = useState({
+    analysis: false,
+    funnel: false,
+    competitive: false,
+    scenarios: false,
+    trials: false,
+    export: false
+  });
   const [analysis, setAnalysis] = useState(null);
   const [funnel, setFunnel] = useState(null);
   const [error, setError] = useState("");
