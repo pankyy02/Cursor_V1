@@ -304,6 +304,330 @@ def create_scenario_comparison_chart(scenario_models, therapy_area="", product_n
     
     return json.dumps(fig, cls=PlotlyJSONEncoder)
 
+# Company Intelligence Engine Functions
+async def identify_parent_company(product_name: str, perplexity_key: str) -> Dict[str, str]:
+    """Identify parent company and basic info from product name using Perplexity"""
+    try:
+        query = f"What company makes {product_name}? Provide the parent company name, official website, drug class, and therapeutic area. Include recent financial information and market position."
+        
+        result = await search_with_perplexity(query, perplexity_key, "company_identification")
+        
+        # Extract structured information from the response
+        import re
+        content = result.content.lower()
+        
+        # Common pharmaceutical company patterns
+        company_patterns = [
+            r'(novartis|pfizer|roche|bristol myers|merck|johnson \& johnson|abbvie|gilead|biogen|amgen|eli lilly|gsk|sanofi|astrazeneca|bayer|takeda|celgene|blueprint medicines|deciphera|exelixis)',
+            r'([a-z\s&]+)\s+(?:inc|corp|ltd|pharmaceuticals|pharma|biopharm)',
+            r'company:\s*([a-z\s&]+)',
+            r'manufacturer:\s*([a-z\s&]+)',
+            r'developed by\s+([a-z\s&]+)'
+        ]
+        
+        company_name = "Unknown Company"
+        for pattern in company_patterns:
+            match = re.search(pattern, content)
+            if match:
+                company_name = match.group(1).title().strip()
+                break
+        
+        # Extract website
+        website_pattern = r'https?://(?:www\.)?([a-z0-9\-]+\.com)'
+        website_match = re.search(website_pattern, result.content)
+        website = website_match.group(0) if website_match else f"https://{company_name.lower().replace(' ', '').replace('&', '')}.com"
+        
+        # Extract drug class/therapeutic area
+        class_patterns = [
+            r'(kinase inhibitor|monoclonal antibody|checkpoint inhibitor|targeted therapy|immunotherapy|chemotherapy|tyrosine kinase inhibitor|small molecule)',
+            r'class:\s*([a-z\s]+)',
+            r'mechanism:\s*([a-z\s]+)'
+        ]
+        
+        drug_class = "Unknown Class"
+        for pattern in class_patterns:
+            match = re.search(pattern, content)
+            if match:
+                drug_class = match.group(1).title().strip()
+                break
+        
+        return {
+            "company_name": company_name,
+            "website": website,
+            "drug_class": drug_class,
+            "search_content": result.content[:500],
+            "sources": result.citations
+        }
+        
+    except Exception as e:
+        logging.error(f"Company identification error: {str(e)}")
+        return {
+            "company_name": "Unknown Company",
+            "website": "",
+            "drug_class": "Unknown Class",
+            "search_content": f"Error: {str(e)}",
+            "sources": []
+        }
+
+async def scrape_investor_relations(company_website: str, company_name: str) -> Dict[str, Any]:
+    """Scrape investor relations data from company website"""
+    try:
+        import requests
+        from bs4 import BeautifulSoup
+        import re
+        from urllib.parse import urljoin, urlparse
+        
+        # Common investor relations URL patterns
+        ir_paths = [
+            "/investors", "/investor-relations", "/ir", "/investors/", 
+            "/investor", "/en/investors", "/company/investors"
+        ]
+        
+        scraped_data = {
+            "financial_highlights": [],
+            "recent_earnings": [],
+            "pipeline_updates": [],
+            "press_releases": [],
+            "presentation_links": [],
+            "sources_accessed": []
+        }
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        base_url = company_website if company_website.startswith('http') else f"https://{company_website}"
+        
+        for ir_path in ir_paths:
+            try:
+                ir_url = urljoin(base_url, ir_path)
+                response = requests.get(ir_url, headers=headers, timeout=15)
+                
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    
+                    # Extract press releases
+                    press_links = soup.find_all('a', href=True)
+                    for link in press_links[:10]:  # Limit to 10
+                        href = link.get('href', '')
+                        text = link.get_text(strip=True)
+                        if any(keyword in text.lower() for keyword in ['press', 'release', 'news', 'announcement']):
+                            if text and len(text) > 10:
+                                scraped_data["press_releases"].append({
+                                    "title": text[:150],
+                                    "url": urljoin(ir_url, href),
+                                    "type": "press_release"
+                                })
+                    
+                    # Extract presentation links
+                    for link in press_links:
+                        href = link.get('href', '')
+                        text = link.get_text(strip=True)
+                        if any(keyword in text.lower() for keyword in ['presentation', 'slides', 'investor', 'earnings']):
+                            if href.endswith(('.pdf', '.ppt', '.pptx')) or 'presentation' in href.lower():
+                                scraped_data["presentation_links"].append({
+                                    "title": text[:100],
+                                    "url": urljoin(ir_url, href),
+                                    "type": "presentation"
+                                })
+                    
+                    # Extract financial highlights from page text
+                    page_text = soup.get_text()
+                    
+                    # Look for financial metrics
+                    financial_patterns = [
+                        r'\$([0-9.,]+)\s*(million|billion|M|B)\s*revenue',
+                        r'revenue.*?\$([0-9.,]+)\s*(million|billion|M|B)',
+                        r'sales.*?\$([0-9.,]+)\s*(million|billion|M|B)',
+                        r'market cap.*?\$([0-9.,]+)\s*(million|billion|M|B)'
+                    ]
+                    
+                    for pattern in financial_patterns:
+                        matches = re.findall(pattern, page_text, re.IGNORECASE)
+                        for match in matches[:3]:  # Limit results
+                            scraped_data["financial_highlights"].append({
+                                "metric": f"${match[0]} {match[1]}",
+                                "source": "investor_relations_page"
+                            })
+                    
+                    scraped_data["sources_accessed"].append(ir_url)
+                    break  # Found working IR page, stop trying others
+                    
+            except Exception as e:
+                continue  # Try next IR path
+        
+        return scraped_data
+        
+    except Exception as e:
+        logging.error(f"Investor relations scraping error: {str(e)}")
+        return {
+            "financial_highlights": [],
+            "recent_earnings": [],
+            "pipeline_updates": [],
+            "press_releases": [],
+            "presentation_links": [],
+            "sources_accessed": [],
+            "error": str(e)
+        }
+
+async def find_competitive_products(drug_class: str, therapy_area: str, perplexity_key: str) -> List[Dict[str, Any]]:
+    """Find competing products in the same therapeutic class using Perplexity"""
+    try:
+        query = f"""
+        List all competing drugs and products in the {drug_class} class for {therapy_area} therapy area. 
+        For each competitor, provide:
+        1. Product name
+        2. Parent company
+        3. Approval status and dates
+        4. Market share or sales figures if available
+        5. Key differentiators
+        Include both approved drugs and those in late-stage development (Phase 3).
+        """
+        
+        result = await search_with_perplexity(query, perplexity_key, "competitive_products")
+        
+        # Parse the response to extract structured competitor data
+        competitors = []
+        content_lines = result.content.split('\n')
+        
+        current_product = {}
+        for line in content_lines:
+            line = line.strip()
+            if not line:
+                if current_product and current_product.get('name'):
+                    competitors.append(current_product)
+                    current_product = {}
+                continue
+            
+            # Look for product names (usually at start of line or after numbers)
+            import re
+            product_pattern = r'^\d*\.?\s*([A-Z][a-zA-Z0-9\-\s]+(?:\([a-z]+\))?)'
+            company_pattern = r'(?:by|from|manufacturer?:?)\s+([A-Z][a-zA-Z\s&]+)'
+            
+            product_match = re.search(product_pattern, line)
+            company_match = re.search(company_pattern, line, re.IGNORECASE)
+            
+            if product_match and not current_product.get('name'):
+                current_product['name'] = product_match.group(1).strip()
+                current_product['description'] = line
+            
+            if company_match:
+                current_product['company'] = company_match.group(1).strip()
+            
+            # Look for approval dates
+            if 'approved' in line.lower() or 'fda' in line.lower():
+                current_product['approval_status'] = line
+            
+            # Look for market share or sales
+            if any(term in line.lower() for term in ['market share', 'sales', 'revenue', '%']):
+                current_product['market_metrics'] = line
+        
+        # Add last product if exists
+        if current_product and current_product.get('name'):
+            competitors.append(current_product)
+        
+        # If parsing didn't work well, create fallback structure
+        if len(competitors) < 2:
+            # Extract product names using simpler method
+            lines_with_drugs = [line for line in content_lines 
+                              if any(term in line.lower() for term in ['drug', 'therapy', 'treatment', 'inhibitor', 'mab'])]
+            
+            for line in lines_with_drugs[:5]:  # Limit to 5
+                competitors.append({
+                    'name': line.strip()[:50],
+                    'description': line.strip(),
+                    'company': 'To be determined',
+                    'source': 'perplexity_search'
+                })
+        
+        # Add metadata
+        for competitor in competitors:
+            competitor['search_query'] = query
+            competitor['therapeutic_area'] = therapy_area
+            competitor['drug_class'] = drug_class
+        
+        return competitors[:10]  # Limit to top 10
+        
+    except Exception as e:
+        logging.error(f"Competitive products search error: {str(e)}")
+        return [{
+            'name': 'Error in competitive search',
+            'description': str(e),
+            'company': 'Unknown',
+            'search_query': query if 'query' in locals() else 'Unknown'
+        }]
+
+async def generate_company_intelligence(product_name: str, therapy_area: str, perplexity_key: str, include_competitors: bool = True) -> CompanyIntelligence:
+    """Complete company intelligence pipeline"""
+    try:
+        # Step 1: Identify parent company
+        company_info = await identify_parent_company(product_name, perplexity_key)
+        
+        # Step 2: Scrape investor relations data
+        investor_data = await scrape_investor_relations(company_info["website"], company_info["company_name"])
+        
+        # Step 3: Find competitive products (if requested)
+        competitive_products = []
+        if include_competitors:
+            competitive_products = await find_competitive_products(
+                company_info["drug_class"], 
+                therapy_area or "general", 
+                perplexity_key
+            )
+        
+        # Step 4: Get recent developments
+        developments_query = f"Latest news and developments for {product_name} and {company_info['company_name']} in the past 6 months"
+        developments_result = await search_with_perplexity(developments_query, perplexity_key, "recent_developments")
+        
+        recent_developments = []
+        dev_lines = developments_result.content.split('\n')[:10]  # Limit to 10 lines
+        for line in dev_lines:
+            if line.strip() and len(line.strip()) > 20:
+                recent_developments.append({
+                    "update": line.strip()[:200],
+                    "source": "perplexity_search",
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+        
+        # Step 5: Extract financial metrics
+        financial_metrics = {
+            "highlights": investor_data.get("financial_highlights", []),
+            "market_position": "To be analyzed",
+            "growth_metrics": "See investor data"
+        }
+        
+        # Step 6: Compile comprehensive intelligence
+        intelligence = CompanyIntelligence(
+            product_name=product_name,
+            parent_company=company_info["company_name"],
+            company_website=company_info["website"],
+            market_class=company_info["drug_class"],
+            investor_data=investor_data,
+            press_releases=investor_data.get("press_releases", []),
+            competitive_products=competitive_products,
+            financial_metrics=financial_metrics,
+            recent_developments=recent_developments,
+            sources_scraped=investor_data.get("sources_accessed", []) + company_info.get("sources", [])
+        )
+        
+        return intelligence
+        
+    except Exception as e:
+        logging.error(f"Company intelligence generation error: {str(e)}")
+        # Return fallback intelligence
+        return CompanyIntelligence(
+            product_name=product_name,
+            parent_company="Unknown Company",
+            company_website="",
+            market_class="Unknown Class",
+            investor_data={"error": str(e)},
+            press_releases=[],
+            competitive_products=[],
+            financial_metrics={"error": str(e)},
+            recent_developments=[],
+            sources_scraped=[]
+        )
+
 # Perplexity Integration Functions
 async def search_with_perplexity(query: str, api_key: str, search_focus: str = "pharmaceutical") -> PerplexityResult:
     """Enhanced search using Perplexity API with citations"""
