@@ -861,17 +861,61 @@ const App = () => {
                     </div>
                   )}
 
-                  {/* Competitive Intelligence Tab */}
+                  {/* Enhanced Competitive Intelligence Tab */}
                   {activeTab === "competitive" && competitiveData && (
                     <div className="space-y-6">
                       <div className="mb-4">
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">🏆 Competitive Landscape</h3>
-                        <p className="text-gray-600">Market intelligence for {therapyArea}</p>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">🏆 Enhanced Competitive Intelligence</h3>
+                        <p className="text-gray-600">Real-time competitive analysis for {therapyArea}</p>
+                        {competitiveData.analysis_type && (
+                          <div className="mt-2 text-sm text-blue-600 font-medium">
+                            🤖 {competitiveData.analysis_type} | 🔗 {competitiveData.total_sources} Sources
+                          </div>
+                        )}
                       </div>
 
-                      {/* Key Competitors */}
-                      {competitiveData.competitors && (
+                      {/* Real-time Intelligence Section */}
+                      {competitiveData.real_time_intelligence && (
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">🔍 Real-time Market Intelligence</h4>
+                          <div className="text-gray-700 leading-relaxed whitespace-pre-wrap mb-4">
+                            {competitiveData.real_time_intelligence.content}
+                          </div>
+                          
+                          {competitiveData.real_time_intelligence.sources && competitiveData.real_time_intelligence.sources.length > 0 && (
+                            <div className="mt-4 pt-3 border-t border-blue-200">
+                              <div className="text-sm font-medium text-gray-900 mb-2">📚 Live Sources:</div>
+                              <div className="flex flex-wrap gap-2">
+                                {competitiveData.real_time_intelligence.sources.slice(0, 5).map((source, index) => (
+                                  <a 
+                                    key={index}
+                                    href={source} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-xs bg-white px-2 py-1 rounded border text-blue-600 hover:bg-blue-100"
+                                  >
+                                    Source {index + 1}
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Enhanced Analysis Section */}
+                      {competitiveData.enhanced_analysis && (
                         <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">🤖 AI-Enhanced Analysis</h4>
+                          <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                            {competitiveData.enhanced_analysis}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Legacy competitive data structure support */}
+                      {competitiveData.competitors && (
+                        <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
                           <h4 className="text-lg font-semibold text-gray-900 mb-4">🎯 Key Market Players</h4>
                           <div className="grid md:grid-cols-2 gap-4">
                             {competitiveData.competitors.slice(0, 6).map((competitor, index) => (
@@ -895,30 +939,13 @@ const App = () => {
                         </div>
                       )}
 
-                      {/* Market Dynamics - Better parsing */}
-                      <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                        <h4 className="text-lg font-semibold text-gray-900 mb-3">📊 Market Dynamics & Trends</h4>
-                        <div className="text-gray-700 leading-relaxed">
-                          {typeof competitiveData.market_dynamics === 'string' 
-                            ? competitiveData.market_dynamics.replace(/```json|```/g, '').trim()
-                            : JSON.stringify(competitiveData.market_dynamics, null, 2)
-                          }
-                        </div>
-                      </div>
-
-                      {/* Pipeline Analysis */}
-                      {competitiveData.pipeline && (
-                        <div className="bg-teal-50 rounded-lg p-4 border border-teal-200">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-3">🔬 Pipeline Intelligence</h4>
-                          <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">{competitiveData.pipeline}</div>
-                        </div>
-                      )}
-
-                      {/* Upcoming Catalysts */}
-                      {competitiveData.catalysts && (
-                        <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-3">⚡ Key Catalysts</h4>
-                          <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">{competitiveData.catalysts}</div>
+                      {/* Combined Insights */}
+                      {competitiveData.combined_insights && (
+                        <div className="bg-gray-50 rounded-lg p-4 border">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">💡 Complete Intelligence Report</h4>
+                          <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
+                            {competitiveData.combined_insights}
+                          </div>
                         </div>
                       )}
                     </div>
