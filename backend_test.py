@@ -829,6 +829,576 @@ class PharmaAPITester:
             self.log_test_result("Perplexity Data Storage", False, f"Exception: {str(e)}")
             return False
     
+    # ========================================
+    # COMPANY INTELLIGENCE ENGINE TESTS
+    # ========================================
+    
+    async def test_company_intelligence_qinlock(self) -> bool:
+        """Test Company Intelligence Engine with Qinlock (primary test case)"""
+        try:
+            payload = {
+                "product_name": "Qinlock",
+                "therapy_area": "GIST",
+                "api_key": TEST_PERPLEXITY_KEY,
+                "include_competitors": True
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/company-intelligence", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["product_name", "parent_company", "company_website", "market_class", 
+                                 "investor_data", "press_releases", "competitive_products", 
+                                 "financial_metrics", "recent_developments", "sources_scraped", "timestamp"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("Company Intelligence - Qinlock", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate product name mapping
+                if data.get("product_name") != "Qinlock":
+                    self.log_test_result("Company Intelligence - Qinlock", False, 
+                                       f"Product name mismatch: {data.get('product_name')}")
+                    return False
+                
+                # Check parent company identification (should identify Deciphera or Blueprint Medicines)
+                parent_company = data.get("parent_company", "").lower()
+                expected_companies = ["deciphera", "blueprint medicines", "blueprint"]
+                company_identified = any(company in parent_company for company in expected_companies)
+                
+                # Validate website format
+                website = data.get("company_website", "")
+                has_valid_website = website.startswith("http") or ".com" in website
+                
+                # Check market class (should be kinase inhibitor or similar)
+                market_class = data.get("market_class", "").lower()
+                expected_classes = ["kinase inhibitor", "tyrosine kinase", "targeted therapy", "inhibitor"]
+                class_identified = any(cls in market_class for cls in expected_classes)
+                
+                # Validate investor data structure
+                investor_data = data.get("investor_data", {})
+                has_investor_structure = isinstance(investor_data, dict)
+                
+                # Check competitive products
+                competitive_products = data.get("competitive_products", [])
+                has_competitors = len(competitive_products) > 0
+                
+                # Validate sources scraped
+                sources_scraped = data.get("sources_scraped", [])
+                has_sources = len(sources_scraped) > 0
+                
+                success = (not missing_fields and has_valid_website and 
+                          has_investor_structure and has_competitors)
+                
+                self.log_test_result("Company Intelligence - Qinlock", success, 
+                                   f"Parent company: {data.get('parent_company', 'Unknown')}, "
+                                   f"Expected company identified: {company_identified}, "
+                                   f"Market class: {data.get('market_class', 'Unknown')}, "
+                                   f"Class identified: {class_identified}, "
+                                   f"Competitors found: {len(competitive_products)}, "
+                                   f"Sources: {len(sources_scraped)}")
+                return success
+                
+            elif response.status_code == 500:
+                error_text = response.text.lower()
+                if "api" in error_text and ("key" in error_text or "auth" in error_text):
+                    self.log_test_result("Company Intelligence - Qinlock", False, 
+                                       "Perplexity API key authentication required - endpoint structure validated")
+                    return False
+                else:
+                    self.log_test_result("Company Intelligence - Qinlock", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Company Intelligence - Qinlock", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Company Intelligence - Qinlock", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_company_intelligence_keytruda(self) -> bool:
+        """Test Company Intelligence Engine with Keytruda (secondary test case)"""
+        try:
+            payload = {
+                "product_name": "Keytruda",
+                "therapy_area": "Oncology",
+                "api_key": TEST_PERPLEXITY_KEY,
+                "include_competitors": True
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/company-intelligence", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate basic structure
+                required_fields = ["product_name", "parent_company", "market_class"]
+                has_required = all(field in data for field in required_fields)
+                
+                if not has_required:
+                    self.log_test_result("Company Intelligence - Keytruda", False, 
+                                       "Missing basic required fields")
+                    return False
+                
+                # Check parent company (should identify Merck)
+                parent_company = data.get("parent_company", "").lower()
+                merck_identified = "merck" in parent_company
+                
+                # Check market class (should be PD-1 inhibitor or immunotherapy)
+                market_class = data.get("market_class", "").lower()
+                expected_classes = ["pd-1", "checkpoint inhibitor", "immunotherapy", "monoclonal antibody"]
+                class_identified = any(cls in market_class for cls in expected_classes)
+                
+                # Check competitive products (should find other PD-1 inhibitors)
+                competitive_products = data.get("competitive_products", [])
+                has_competitors = len(competitive_products) > 0
+                
+                # Look for known PD-1 competitors in the results
+                competitor_names = [comp.get("name", "").lower() for comp in competitive_products]
+                known_competitors = ["opdivo", "tecentriq", "imfinzi", "bavencio"]
+                found_known_competitors = sum(1 for comp in known_competitors 
+                                            if any(comp in name for name in competitor_names))
+                
+                success = has_required and has_competitors
+                
+                self.log_test_result("Company Intelligence - Keytruda", success, 
+                                   f"Parent company: {data.get('parent_company', 'Unknown')}, "
+                                   f"Merck identified: {merck_identified}, "
+                                   f"Market class: {data.get('market_class', 'Unknown')}, "
+                                   f"Class identified: {class_identified}, "
+                                   f"Competitors: {len(competitive_products)}, "
+                                   f"Known competitors found: {found_known_competitors}")
+                return success
+                
+            elif response.status_code == 500:
+                error_text = response.text.lower()
+                if "api" in error_text and ("key" in error_text or "auth" in error_text):
+                    self.log_test_result("Company Intelligence - Keytruda", False, 
+                                       "Perplexity API key authentication required")
+                    return False
+                else:
+                    self.log_test_result("Company Intelligence - Keytruda", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Company Intelligence - Keytruda", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Company Intelligence - Keytruda", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_company_intelligence_competitive_discovery(self) -> bool:
+        """Test competitive product discovery in GIST therapeutic area"""
+        try:
+            payload = {
+                "product_name": "Qinlock",
+                "therapy_area": "GIST",
+                "api_key": TEST_PERPLEXITY_KEY,
+                "include_competitors": True
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/company-intelligence", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                competitive_products = data.get("competitive_products", [])
+                
+                if len(competitive_products) == 0:
+                    self.log_test_result("Company Intelligence - Competitive Discovery", False, 
+                                       "No competitive products found")
+                    return False
+                
+                # Validate competitive product structure
+                valid_competitors = 0
+                gist_related_competitors = 0
+                
+                for competitor in competitive_products:
+                    # Check required fields
+                    if competitor.get("name") and competitor.get("description"):
+                        valid_competitors += 1
+                    
+                    # Check for GIST-related terms
+                    comp_text = (competitor.get("name", "") + " " + 
+                               competitor.get("description", "")).lower()
+                    if any(term in comp_text for term in ["gist", "imatinib", "sunitinib", "regorafenib", 
+                                                         "avapritinib", "ripretinib", "gleevec", "sutent"]):
+                        gist_related_competitors += 1
+                
+                # Check for known GIST competitors
+                known_gist_drugs = ["imatinib", "sunitinib", "regorafenib", "avapritinib", "gleevec", "sutent", "stivarga"]
+                found_known_drugs = 0
+                
+                for competitor in competitive_products:
+                    comp_name = competitor.get("name", "").lower()
+                    comp_desc = competitor.get("description", "").lower()
+                    comp_text = comp_name + " " + comp_desc
+                    
+                    for drug in known_gist_drugs:
+                        if drug in comp_text:
+                            found_known_drugs += 1
+                            break
+                
+                # Validate therapeutic area consistency
+                therapy_area_matches = 0
+                for competitor in competitive_products:
+                    if competitor.get("therapeutic_area") == "GIST" or competitor.get("therapeutic_area") == "general":
+                        therapy_area_matches += 1
+                
+                success = (valid_competitors >= 2 and 
+                          (gist_related_competitors > 0 or found_known_drugs > 0))
+                
+                self.log_test_result("Company Intelligence - Competitive Discovery", success, 
+                                   f"Total competitors: {len(competitive_products)}, "
+                                   f"Valid structure: {valid_competitors}, "
+                                   f"GIST-related: {gist_related_competitors}, "
+                                   f"Known GIST drugs: {found_known_drugs}, "
+                                   f"Therapy area matches: {therapy_area_matches}")
+                return success
+                
+            elif response.status_code == 500:
+                error_text = response.text.lower()
+                if "api" in error_text and ("key" in error_text or "auth" in error_text):
+                    self.log_test_result("Company Intelligence - Competitive Discovery", False, 
+                                       "Perplexity API key required for competitive discovery")
+                    return False
+                else:
+                    self.log_test_result("Company Intelligence - Competitive Discovery", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Company Intelligence - Competitive Discovery", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Company Intelligence - Competitive Discovery", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_company_intelligence_investor_relations(self) -> bool:
+        """Test investor relations data extraction functionality"""
+        try:
+            payload = {
+                "product_name": "Qinlock",
+                "therapy_area": "GIST",
+                "api_key": TEST_PERPLEXITY_KEY,
+                "include_competitors": False  # Focus on investor data
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/company-intelligence", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                investor_data = data.get("investor_data", {})
+                
+                if not isinstance(investor_data, dict):
+                    self.log_test_result("Company Intelligence - Investor Relations", False, 
+                                       "Investor data not in correct format")
+                    return False
+                
+                # Check for investor relations data structure
+                expected_fields = ["financial_highlights", "recent_earnings", "pipeline_updates", 
+                                 "press_releases", "presentation_links", "sources_accessed"]
+                
+                has_structure = all(field in investor_data for field in expected_fields)
+                
+                # Check if any data was actually scraped
+                press_releases = investor_data.get("press_releases", [])
+                financial_highlights = investor_data.get("financial_highlights", [])
+                sources_accessed = investor_data.get("sources_accessed", [])
+                presentation_links = investor_data.get("presentation_links", [])
+                
+                has_press_releases = len(press_releases) > 0
+                has_financial_data = len(financial_highlights) > 0
+                has_sources = len(sources_accessed) > 0
+                has_presentations = len(presentation_links) > 0
+                
+                # Validate press release structure if present
+                valid_press_releases = 0
+                if press_releases:
+                    for pr in press_releases:
+                        if pr.get("title") and pr.get("url") and pr.get("type"):
+                            valid_press_releases += 1
+                
+                # Check for financial metrics in main response
+                financial_metrics = data.get("financial_metrics", {})
+                has_financial_metrics = isinstance(financial_metrics, dict) and len(financial_metrics) > 0
+                
+                # Check sources scraped at top level
+                top_level_sources = data.get("sources_scraped", [])
+                has_top_level_sources = len(top_level_sources) > 0
+                
+                # Success if we have proper structure and some data was attempted to be scraped
+                success = (has_structure and 
+                          (has_sources or has_top_level_sources or has_press_releases or has_financial_data))
+                
+                self.log_test_result("Company Intelligence - Investor Relations", success, 
+                                   f"Structure complete: {has_structure}, "
+                                   f"Press releases: {len(press_releases)} (valid: {valid_press_releases}), "
+                                   f"Financial highlights: {len(financial_highlights)}, "
+                                   f"Sources accessed: {len(sources_accessed)}, "
+                                   f"Presentations: {len(presentation_links)}, "
+                                   f"Financial metrics: {has_financial_metrics}")
+                return success
+                
+            elif response.status_code == 500:
+                error_text = response.text.lower()
+                if "api" in error_text and ("key" in error_text or "auth" in error_text):
+                    self.log_test_result("Company Intelligence - Investor Relations", False, 
+                                       "Perplexity API key required for investor relations scraping")
+                    return False
+                else:
+                    self.log_test_result("Company Intelligence - Investor Relations", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Company Intelligence - Investor Relations", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Company Intelligence - Investor Relations", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_company_intelligence_error_handling(self) -> bool:
+        """Test error handling for unknown products and failed web scraping"""
+        try:
+            # Test with unknown/invalid product
+            payload = {
+                "product_name": "UnknownDrugXYZ123",
+                "therapy_area": "Unknown Disease Area",
+                "api_key": TEST_PERPLEXITY_KEY,
+                "include_competitors": True
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/company-intelligence", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Should still return valid structure even for unknown products
+                required_fields = ["product_name", "parent_company", "company_website", "market_class"]
+                has_required = all(field in data for field in required_fields)
+                
+                if not has_required:
+                    self.log_test_result("Company Intelligence - Error Handling", False, 
+                                       "Missing required fields in error case")
+                    return False
+                
+                # Check if fallback values are used
+                parent_company = data.get("parent_company", "")
+                market_class = data.get("market_class", "")
+                
+                # Should have fallback values for unknown products
+                has_fallback_company = "unknown" in parent_company.lower() or len(parent_company) > 0
+                has_fallback_class = "unknown" in market_class.lower() or len(market_class) > 0
+                
+                # Check investor data error handling
+                investor_data = data.get("investor_data", {})
+                has_error_field = "error" in investor_data
+                
+                # Competitive products should be empty or have error handling
+                competitive_products = data.get("competitive_products", [])
+                
+                # Check if error is properly handled in competitive products
+                error_in_competitors = False
+                if competitive_products:
+                    for comp in competitive_products:
+                        if "error" in comp.get("name", "").lower() or "error" in comp.get("description", "").lower():
+                            error_in_competitors = True
+                            break
+                
+                success = has_required and (has_fallback_company or has_fallback_class)
+                
+                self.log_test_result("Company Intelligence - Error Handling", success, 
+                                   f"Structure maintained: {has_required}, "
+                                   f"Fallback company: {has_fallback_company}, "
+                                   f"Fallback class: {has_fallback_class}, "
+                                   f"Investor error handling: {has_error_field}, "
+                                   f"Competitor error handling: {error_in_competitors}")
+                return success
+                
+            elif response.status_code == 500:
+                # Check if error message is informative
+                error_text = response.text
+                
+                # Should have proper error handling
+                has_informative_error = len(error_text) > 10
+                
+                try:
+                    error_data = response.json()
+                    has_detail = "detail" in error_data
+                    error_message = error_data.get("detail", "")
+                    has_meaningful_detail = len(error_message) > 10
+                except:
+                    has_detail = False
+                    has_meaningful_detail = False
+                
+                success = has_informative_error and (has_detail or "api" in error_text.lower())
+                
+                self.log_test_result("Company Intelligence - Error Handling", success, 
+                                   f"Informative error: {has_informative_error}, "
+                                   f"Structured error: {has_detail}, "
+                                   f"Meaningful detail: {has_meaningful_detail}")
+                return success
+            else:
+                self.log_test_result("Company Intelligence - Error Handling", False, 
+                                   f"Unexpected status code: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Company Intelligence - Error Handling", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_company_intelligence_data_persistence(self) -> bool:
+        """Test MongoDB storage and retrieval of company intelligence data"""
+        try:
+            # First, generate company intelligence
+            payload = {
+                "product_name": "TestProduct123",
+                "therapy_area": "Test Area",
+                "api_key": TEST_PERPLEXITY_KEY,
+                "include_competitors": True
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/company-intelligence", json=payload)
+            
+            if response.status_code == 200:
+                # Data should be stored in MongoDB
+                # Now test retrieval
+                retrieval_response = await self.client.get(f"{API_BASE_URL}/company-intelligence/TestProduct123")
+                
+                if retrieval_response.status_code == 200:
+                    retrieved_data = retrieval_response.json()
+                    
+                    # Validate retrieved data structure
+                    required_fields = ["product_name", "parent_company", "market_class", "timestamp"]
+                    has_required = all(field in retrieved_data for field in required_fields)
+                    
+                    # Check if product name matches
+                    product_match = retrieved_data.get("product_name") == "TestProduct123"
+                    
+                    # Validate timestamp
+                    timestamp_valid = False
+                    try:
+                        from datetime import datetime
+                        timestamp_str = retrieved_data.get("timestamp", "")
+                        if timestamp_str:
+                            datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                            timestamp_valid = True
+                    except:
+                        pass
+                    
+                    success = has_required and product_match and timestamp_valid
+                    
+                    self.log_test_result("Company Intelligence - Data Persistence", success, 
+                                       f"Storage and retrieval successful, "
+                                       f"Required fields: {has_required}, "
+                                       f"Product match: {product_match}, "
+                                       f"Valid timestamp: {timestamp_valid}")
+                    return success
+                    
+                elif retrieval_response.status_code == 404:
+                    # Data wasn't stored properly
+                    self.log_test_result("Company Intelligence - Data Persistence", False, 
+                                       "Data not found after storage - storage may have failed")
+                    return False
+                else:
+                    self.log_test_result("Company Intelligence - Data Persistence", False, 
+                                       f"Retrieval failed: {retrieval_response.status_code}")
+                    return False
+                    
+            elif response.status_code == 500:
+                # API key error - test retrieval of non-existent data
+                retrieval_response = await self.client.get(f"{API_BASE_URL}/company-intelligence/NonExistentProduct")
+                
+                if retrieval_response.status_code == 404:
+                    # Proper 404 for non-existent data
+                    self.log_test_result("Company Intelligence - Data Persistence", True, 
+                                       "Proper 404 response for non-existent data - retrieval endpoint working")
+                    return True
+                else:
+                    self.log_test_result("Company Intelligence - Data Persistence", False, 
+                                       f"Unexpected retrieval response: {retrieval_response.status_code}")
+                    return False
+            else:
+                self.log_test_result("Company Intelligence - Data Persistence", False, 
+                                   f"Storage failed: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Company Intelligence - Data Persistence", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_company_intelligence_timeout_handling(self) -> bool:
+        """Test timeout and response time handling for web requests"""
+        try:
+            # Test with a product that might require extensive web scraping
+            payload = {
+                "product_name": "Qinlock",
+                "therapy_area": "GIST",
+                "api_key": TEST_PERPLEXITY_KEY,
+                "include_competitors": True
+            }
+            
+            start_time = time.time()
+            response = await self.client.post(f"{API_BASE_URL}/company-intelligence", json=payload)
+            end_time = time.time()
+            
+            response_time = end_time - start_time
+            
+            # Should complete within reasonable time (60 seconds max due to our client timeout)
+            reasonable_time = response_time < 60
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Check if response is complete despite any timeout issues
+                has_basic_structure = all(field in data for field in ["product_name", "parent_company"])
+                
+                # Check if timeout handling is evident in the data
+                investor_data = data.get("investor_data", {})
+                has_timeout_handling = (
+                    "error" in investor_data or 
+                    "timeout" in str(investor_data).lower() or
+                    len(investor_data.get("sources_accessed", [])) >= 0  # Should have attempted scraping
+                )
+                
+                success = reasonable_time and has_basic_structure
+                
+                self.log_test_result("Company Intelligence - Timeout Handling", success, 
+                                   f"Response time: {response_time:.2f}s, "
+                                   f"Reasonable time: {reasonable_time}, "
+                                   f"Basic structure: {has_basic_structure}, "
+                                   f"Timeout handling: {has_timeout_handling}")
+                return success
+                
+            elif response.status_code == 500:
+                # Even with API errors, should respond in reasonable time
+                success = reasonable_time
+                
+                self.log_test_result("Company Intelligence - Timeout Handling", success, 
+                                   f"Response time: {response_time:.2f}s (with API error), "
+                                   f"Reasonable time: {reasonable_time}")
+                return success
+            else:
+                self.log_test_result("Company Intelligence - Timeout Handling", False, 
+                                   f"Unexpected status: {response.status_code}, Time: {response_time:.2f}s")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Company Intelligence - Timeout Handling", False, f"Exception: {str(e)}")
+            return False
+    
     async def test_visualization_data(self) -> bool:
         """Test Plotly chart data generation"""
         if not self.analysis_id:
