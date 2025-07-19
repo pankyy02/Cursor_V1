@@ -1131,6 +1131,151 @@ const App = () => {
                     </div>
                   )}
 
+                  {/* Company Intelligence Tab */}
+                  {activeTab === "company" && companyIntelligence && (
+                    <div className="space-y-6">
+                      <div className="mb-4">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                          🏢 Company Intelligence: {companyIntelligence.product_name}
+                        </h3>
+                        <div className="flex flex-wrap gap-2 text-sm">
+                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
+                            🏛️ {companyIntelligence.parent_company}
+                          </span>
+                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full">
+                            💊 {companyIntelligence.market_class}
+                          </span>
+                          <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full">
+                            🔗 {companyIntelligence.sources_scraped.length} Sources
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Company Overview */}
+                      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-3">🏛️ Company Overview</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="bg-white rounded-md p-3">
+                            <div className="text-sm text-gray-600">Parent Company</div>
+                            <div className="font-medium text-gray-900">{companyIntelligence.parent_company}</div>
+                          </div>
+                          <div className="bg-white rounded-md p-3">
+                            <div className="text-sm text-gray-600">Website</div>
+                            <a 
+                              href={companyIntelligence.company_website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-blue-600 hover:underline"
+                            >
+                              {companyIntelligence.company_website}
+                            </a>
+                          </div>
+                          <div className="bg-white rounded-md p-3">
+                            <div className="text-sm text-gray-600">Drug Class</div>
+                            <div className="font-medium text-gray-900">{companyIntelligence.market_class}</div>
+                          </div>
+                          <div className="bg-white rounded-md p-3">
+                            <div className="text-sm text-gray-600">Analysis Date</div>
+                            <div className="font-medium text-gray-900">
+                              {new Date(companyIntelligence.timestamp).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Financial Highlights */}
+                      {companyIntelligence.financial_metrics && companyIntelligence.financial_metrics.highlights && companyIntelligence.financial_metrics.highlights.length > 0 && (
+                        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">💰 Financial Highlights</h4>
+                          <div className="grid md:grid-cols-3 gap-3">
+                            {companyIntelligence.financial_metrics.highlights.slice(0, 6).map((highlight, index) => (
+                              <div key={index} className="bg-white rounded-md p-3 text-center">
+                                <div className="font-bold text-green-600 text-lg">{highlight.metric}</div>
+                                <div className="text-xs text-gray-500">{highlight.source}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Press Releases & Investor Data */}
+                      {companyIntelligence.press_releases && companyIntelligence.press_releases.length > 0 && (
+                        <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">📰 Recent Press Releases</h4>
+                          <div className="space-y-2">
+                            {companyIntelligence.press_releases.slice(0, 5).map((release, index) => (
+                              <div key={index} className="bg-white rounded-md p-3 border-l-4 border-orange-500">
+                                <a 
+                                  href={release.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm font-medium text-blue-600 hover:underline"
+                                >
+                                  {release.title}
+                                </a>
+                                <div className="text-xs text-gray-500 mt-1">Press Release</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Competitive Products */}
+                      {companyIntelligence.competitive_products && companyIntelligence.competitive_products.length > 0 && (
+                        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">🏆 Competitive Landscape</h4>
+                          <div className="grid md:grid-cols-2 gap-3">
+                            {companyIntelligence.competitive_products.slice(0, 6).map((product, index) => (
+                              <div key={index} className="bg-white rounded-md p-3">
+                                <div className="font-medium text-gray-900 mb-1">{product.name}</div>
+                                <div className="text-sm text-blue-600 mb-1">{product.company}</div>
+                                <div className="text-xs text-gray-600">{product.description?.slice(0, 100)}...</div>
+                                {product.approval_status && (
+                                  <div className="text-xs text-green-600 mt-1">{product.approval_status}</div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Recent Developments */}
+                      {companyIntelligence.recent_developments && companyIntelligence.recent_developments.length > 0 && (
+                        <div className="bg-teal-50 rounded-lg p-4 border border-teal-200">
+                          <h4 className="text-lg font-semibold text-gray-900 mb-3">📈 Recent Developments</h4>
+                          <div className="space-y-2">
+                            {companyIntelligence.recent_developments.slice(0, 5).map((dev, index) => (
+                              <div key={index} className="bg-white rounded-md p-3 border-l-4 border-teal-500">
+                                <div className="text-sm text-gray-700">{dev.update}</div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {new Date(dev.timestamp).toLocaleDateString()}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Sources Accessed */}
+                      <div className="bg-gray-50 rounded-lg p-4 border">
+                        <h4 className="text-lg font-semibold text-gray-900 mb-3">📚 Intelligence Sources</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {companyIntelligence.sources_scraped.map((source, index) => (
+                            <a
+                              key={index}
+                              href={source}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs bg-white px-2 py-1 rounded border text-blue-600 hover:bg-blue-100"
+                            >
+                              Source {index + 1}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Real-time Search Tab */}
                   {activeTab === "search" && perplexityResults && (
                     <div className="space-y-6">
