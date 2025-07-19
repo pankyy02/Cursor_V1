@@ -682,6 +682,201 @@ const App = () => {
     }
   };
 
+  // Phase 4: Authentication & Payment Handler Functions
+  const handleRegister = async (userData) => {
+    setLoadingState('register', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/auth/register`, userData);
+      setShowRegisterModal(false);
+      setShowLoginModal(true);
+      // Show success message
+      setError("Registration successful! Please log in.");
+    } catch (error) {
+      console.error("Registration error:", error);
+      setError(error.response?.data?.detail || "Registration failed. Please try again.");
+    } finally {
+      setLoadingState('register', false);
+    }
+  };
+
+  const handleLogin = async (loginData) => {
+    setLoadingState('login', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/auth/login`, loginData);
+      const { access_token, user } = response.data;
+      
+      // Store token and user info
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Set authentication state
+      setIsAuthenticated(true);
+      setCurrentUser(user);
+      setShowLoginModal(false);
+      
+      // Configure axios default headers
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      
+    } catch (error) {
+      console.error("Login error:", error);
+      setError(error.response?.data?.detail || "Login failed. Please try again.");
+    } finally {
+      setLoadingState('login', false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${API}/auth/logout`);
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      // Clear local storage and state
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  };
+
+  const loadSubscriptionPlans = async () => {
+    try {
+      const response = await axios.get(`${API}/subscriptions/plans`);
+      setSubscriptionPlans(response.data.plans);
+    } catch (error) {
+      console.error("Failed to load subscription plans:", error);
+    }
+  };
+
+  const handlePayment = async (packageId) => {
+    setLoadingState('payment', true);
+    setError("");
+
+    try {
+      const originUrl = window.location.origin;
+      const response = await axios.post(`${API}/payments/checkout/session`, {
+        package_id: packageId
+      });
+
+      // Redirect to Stripe Checkout
+      window.location.href = response.data.url;
+      
+    } catch (error) {
+      console.error("Payment error:", error);
+      setError(error.response?.data?.detail || "Payment setup failed. Please try again.");
+    } finally {
+      setLoadingState('payment', false);
+    }
+  };
+
+  const checkPaymentStatus = async (sessionId) => {
+    let attempts = 0;
+    const maxAttempts = 5;
+    const pollInterval = 2000; // 2 seconds
+
+    const poll = async () => {
+      if (attempts >= maxAttempts) {
+        setError("Payment status check timed out. Please check your email for confirmation.");
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API}/payments/checkout/status/${sessionId}`);
+        
+        if (response.data.payment_status === 'paid') {
+          setError("");
+          // Refresh user data to get updated subscription
+          const userResponse = await axios.get(`${API}/auth/profile`);
+          setCurrentUser(userResponse.data.user);
+          localStorage.setItem('user', JSON.stringify(userResponse.data.user));
+          setActiveTab("dashboard");
+          return;
+        } else if (response.data.status === 'expired') {
+          setError("Payment session expired. Please try again.");
+          return;
+        }
+
+        // Continue polling if payment is still pending
+        attempts++;
+        setTimeout(poll, pollInterval);
+      } catch (error) {
+        console.error("Error checking payment status:", error);
+        setError("Error checking payment status. Please try again.");
+      }
+    };
+
+    poll();
+  };
+
+  const loadUserWorkflows = async () => {
+    try {
+      if (!isAuthenticated) return;
+      
+      const response = await axios.get(`${API}/workflows`);
+      setUserWorkflows(response.data.workflows);
+    } catch (error) {
+      console.error("Failed to load workflows:", error);
+    }
+  };
+
+  const loadExecutiveDashboard = async () => {
+    try {
+      if (!isAuthenticated) return;
+      
+      const response = await axios.get(`${API}/dashboard/executive`);
+      setExecutiveDashboard(response.data);
+    } catch (error) {
+      console.error("Failed to load executive dashboard:", error);
+    }
+  };
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setIsAuthenticated(true);
+        setCurrentUser(user);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      } catch (error) {
+        console.error("Error parsing stored user data:", error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    }
+  }, []);
+
+  // Check for payment success on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    
+    if (sessionId) {
+      checkPaymentStatus(sessionId);
+      // Clean URL
+      window.history.replaceState(null, null, window.location.pathname);
+    }
+  }, []);
+
+  // Load data when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadSubscriptionPlans();
+      loadUserWorkflows();
+      if (currentUser?.subscription_tier === 'enterprise') {
+        loadExecutiveDashboard();
+      }
+    }
+  }, [isAuthenticated, currentUser]);
+
   const resetForm = () => {
     setTherapyArea("");
     setProductName("");
