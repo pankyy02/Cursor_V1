@@ -3190,6 +3190,223 @@ const App = () => {
           </div>
         </div>
       </div>
+
+      {/* Phase 4: Authentication Modals */}
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Login to Your Account</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target);
+              handleLogin({
+                email: formData.get('email'),
+                password: formData.get('password')
+              });
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <input
+                    name="password"
+                    type="password"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowLoginModal(false)}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loadingStates.login}
+                  className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:bg-gray-300"
+                >
+                  {loadingStates.login ? 'Logging in...' : 'Login'}
+                </button>
+              </div>
+            </form>
+            <p className="text-sm text-center text-gray-600 mt-4">
+              Don't have an account?{' '}
+              <button
+                onClick={() => {
+                  setShowLoginModal(false);
+                  setShowRegisterModal(true);
+                }}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                Sign up here
+              </button>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Register Modal */}
+      {showRegisterModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Create Your Account</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target);
+              handleRegister({
+                email: formData.get('email'),
+                password: formData.get('password'),
+                first_name: formData.get('first_name'),
+                last_name: formData.get('last_name'),
+                company: formData.get('company'),
+                role: formData.get('role')
+              });
+            }}>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                    <input
+                      name="first_name"
+                      type="text"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                    <input
+                      name="last_name"
+                      type="text"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <input
+                    name="password"
+                    type="password"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Company (Optional)</label>
+                  <input
+                    name="company"
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role (Optional)</label>
+                  <input
+                    name="role"
+                    type="text"
+                    placeholder="e.g. Market Analyst, Business Development"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterModal(false)}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loadingStates.register}
+                  className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:bg-gray-300"
+                >
+                  {loadingStates.register ? 'Creating Account...' : 'Create Account'}
+                </button>
+              </div>
+            </form>
+            <p className="text-sm text-center text-gray-600 mt-4">
+              Already have an account?{' '}
+              <button
+                onClick={() => {
+                  setShowRegisterModal(false);
+                  setShowLoginModal(true);
+                }}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                Login here
+              </button>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+            <h3 className="text-lg font-semibold mb-4">Choose Your Subscription Plan</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              {subscriptionPlans.map((plan) => (
+                <div key={plan.id} className="border rounded-lg p-4">
+                  <h4 className="font-semibold text-lg">{plan.name}</h4>
+                  <div className="text-2xl font-bold text-blue-600 my-2">
+                    ${plan.price.toFixed(2)}<span className="text-sm text-gray-600">/month</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
+                  <ul className="space-y-1 mb-4">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="text-sm text-gray-700 flex items-start">
+                        <span className="text-green-500 mr-2">✓</span>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => handlePayment(plan.id)}
+                    disabled={loadingStates.payment}
+                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:bg-gray-300"
+                  >
+                    {loadingStates.payment ? 'Processing...' : 'Subscribe'}
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
