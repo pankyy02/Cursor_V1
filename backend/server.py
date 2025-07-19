@@ -229,6 +229,85 @@ class ResearchResult(BaseModel):
     results: Dict[str, Any]
     cached_at: datetime = Field(default_factory=datetime.utcnow)
 
+# Phase 3 Models: Real-World Evidence Integration & Market Access Intelligence
+class RWERequest(BaseModel):
+    therapy_area: str
+    product_name: Optional[str] = None
+    analysis_type: str = "comprehensive"  # "effectiveness", "safety", "outcomes", "comprehensive"
+    data_sources: List[str] = ["registries", "claims", "ehr", "patient_outcomes"]
+    api_key: str
+
+class RealWorldEvidence(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    therapy_area: str
+    product_name: Optional[str]
+    effectiveness_data: Dict[str, Any]
+    safety_profile: Dict[str, Any]
+    patient_outcomes: Dict[str, Any]
+    real_world_performance: Dict[str, Any]
+    comparative_effectiveness: List[Dict[str, Any]]
+    cost_effectiveness: Dict[str, Any]
+    adherence_patterns: Dict[str, Any]
+    health_economics_data: Dict[str, Any]
+    evidence_quality_score: float
+    data_sources: List[str]
+    study_populations: Dict[str, Any]
+    limitations: List[str]
+    recommendations: List[str]
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class MarketAccessRequest(BaseModel):
+    therapy_area: str
+    product_name: Optional[str] = None
+    target_markets: List[str] = ["US", "EU5", "Japan"]
+    analysis_depth: str = "comprehensive"  # "basic", "standard", "comprehensive"
+    api_key: str
+
+class MarketAccessIntelligence(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    therapy_area: str
+    product_name: Optional[str]
+    payer_landscape: Dict[str, Any]
+    reimbursement_pathways: Dict[str, Any]
+    pricing_analysis: Dict[str, Any]
+    access_barriers: List[Dict[str, str]]
+    heor_requirements: Dict[str, Any]
+    regulatory_pathways: Dict[str, Any]
+    approval_timelines: Dict[str, Any]
+    formulary_placement: Dict[str, Any]
+    budget_impact_models: Dict[str, Any]
+    coverage_policies: List[Dict[str, Any]]
+    stakeholder_mapping: Dict[str, Any]
+    market_readiness_score: float
+    recommendations: List[str]
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class PredictiveAnalyticsRequest(BaseModel):
+    therapy_area: str
+    product_name: Optional[str] = None
+    forecast_horizon: int = 10  # years
+    model_type: str = "ml_enhanced"  # "traditional", "ml_enhanced", "hybrid"
+    include_rwe: bool = True
+    api_key: str
+
+class PredictiveAnalytics(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    therapy_area: str
+    product_name: Optional[str]
+    market_penetration_forecast: Dict[str, Any]
+    competitive_response_modeling: Dict[str, Any]
+    patient_flow_predictions: Dict[str, Any]
+    revenue_forecasts: Dict[str, Any]
+    risk_adjusted_projections: Dict[str, Any]
+    scenario_probabilities: Dict[str, float]
+    confidence_intervals: Dict[str, Any]
+    key_assumptions: List[str]
+    sensitivity_factors: Dict[str, float]
+    model_performance_metrics: Dict[str, float]
+    uncertainty_analysis: Dict[str, Any]
+    recommendations: List[str]
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 # Utility functions for data visualization
 def create_funnel_chart(funnel_stages):
     """Create a funnel visualization chart"""
