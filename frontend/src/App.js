@@ -513,6 +513,33 @@ const App = () => {
                 />
               </div>
 
+              {/* Real-time Search Input */}
+              {perplexityKey && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Real-time Intelligence Search
+                  </label>
+                  <input
+                    type="text"
+                    value={realTimeSearch}
+                    onChange={(e) => setRealTimeSearch(e.target.value)}
+                    placeholder="e.g., Latest GIST market data, Qinlock competitive analysis"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={handleRealTimeSearch}
+                    disabled={loadingStates.search}
+                    className={`w-full mt-2 px-4 py-2 rounded-md font-medium transition-colors ${
+                      loadingStates.search
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    }`}
+                  >
+                    {loadingStates.search ? 'Searching...' : '🔍 Real-time Search'}
+                  </button>
+                </div>
+              )}
+
               {/* Product Name Input */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
