@@ -541,6 +541,23 @@ const App = () => {
             <div className="bg-white rounded-xl shadow-lg p-6 sticky top-8">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Configuration</h3>
               
+              {/* Gemini API Key Input (Optional) */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Gemini API Key (Optional)
+                </label>
+                <input
+                  type="password"
+                  value={geminiKey}
+                  onChange={(e) => setGeminiKey(e.target.value)}
+                  placeholder="AI..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  For multi-model ensemble analysis
+                </p>
+              </div>
+
               {/* Perplexity API Key Input */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
