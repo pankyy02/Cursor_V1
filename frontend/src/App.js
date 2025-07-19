@@ -1680,10 +1680,16 @@ const App = () => {
                         <p className="text-sm">Patient flow funnels, scenario modeling, market projections</p>
                       </div>
                       
+                      <div className="bg-orange-50 p-4 rounded-lg">
+                        <div className="text-2xl mb-2">🏢</div>
+                        <h4 className="font-semibold text-gray-900">Company Intelligence</h4>
+                        <p className="text-sm">Automated competitive research, investor intelligence, financial metrics</p>
+                      </div>
+                      
                       <div className="bg-purple-50 p-4 rounded-lg">
                         <div className="text-2xl mb-2">🏆</div>
                         <h4 className="font-semibold text-gray-900">Competitive Intelligence</h4>
-                        <p className="text-sm">Market players, pipeline analysis, competitive positioning</p>
+                        <p className="text-sm">Real-time market players, pipeline analysis, competitive positioning</p>
                       </div>
                       
                       <div className="bg-teal-50 p-4 rounded-lg">
