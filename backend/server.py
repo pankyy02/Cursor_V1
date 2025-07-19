@@ -176,7 +176,7 @@ def create_market_analysis_chart(competitive_data):
     
     return json.dumps(fig, cls=PlotlyJSONEncoder)
 
-def create_scenario_comparison_chart(scenario_models):
+def create_scenario_comparison_chart(scenario_models, therapy_area="", product_name=""):
     """Create scenario comparison visualization"""
     if not scenario_models:
         return None
@@ -186,24 +186,90 @@ def create_scenario_comparison_chart(scenario_models):
     
     fig = go.Figure()
     
-    colors = {'optimistic': 'green', 'realistic': 'blue', 'pessimistic': 'red'}
+    colors = {
+        'optimistic': '#10B981',    # Green
+        'realistic': '#3B82F6',     # Blue  
+        'pessimistic': '#EF4444',   # Red
+        'best_case': '#10B981',
+        'base_case': '#3B82F6',
+        'worst_case': '#EF4444'
+    }
     
     for scenario in scenarios:
-        if 'projections' in scenario_models[scenario]:
-            projections = scenario_models[scenario]['projections'][:6]  # 6 years
+        scenario_data = scenario_models[scenario]
+        if 'projections' in scenario_data and scenario_data['projections']:
+            projections = scenario_data['projections'][:6]  # 6 years
+            
+            # Ensure we have numeric values
+            numeric_projections = []
+            for proj in projections:
+                try:
+                    numeric_projections.append(float(proj))
+                except:
+                    numeric_projections.append(0)
+            
+            color = colors.get(scenario.lower(), '#6B7280')
+            
             fig.add_trace(go.Scatter(
-                x=years[:len(projections)],
-                y=projections,
+                x=years[:len(numeric_projections)],
+                y=numeric_projections,
                 mode='lines+markers',
-                name=scenario.title(),
-                line=dict(color=colors.get(scenario, 'gray'))
+                name=scenario.replace('_', ' ').title(),
+                line=dict(color=color, width=3),
+                marker=dict(size=8, color=color),
+                hovertemplate=f'<b>{scenario.title()}</b><br>' +
+                             'Year: %{x}<br>' +
+                             'Revenue: $%{y:.0f}M<br>' +
+                             '<extra></extra>'
             ))
     
+    # Add title with product context
+    title_text = f"Market Forecast Scenarios"
+    if product_name:
+        title_text += f" - {product_name}"
+    if therapy_area:
+        title_text += f" ({therapy_area})"
+    
     fig.update_layout(
-        title="Market Forecast Scenarios",
+        title={
+            'text': title_text,
+            'x': 0.5,
+            'xanchor': 'center',
+            'font': {'size': 18, 'family': 'Arial, sans-serif'}
+        },
         xaxis_title="Year",
-        yaxis_title="Market Value ($M)",
-        hovermode='x unified'
+        yaxis_title="Market Value ($ Millions)",
+        hovermode='x unified',
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=400,
+        margin=dict(t=100, b=50, l=60, r=50),
+        font=dict(family="Arial, sans-serif", size=12)
+    )
+    
+    # Style the axes
+    fig.update_xaxes(
+        showgrid=True, 
+        gridwidth=1, 
+        gridcolor='rgba(128,128,128,0.2)',
+        showline=True,
+        linewidth=2,
+        linecolor='rgba(128,128,128,0.3)'
+    )
+    fig.update_yaxes(
+        showgrid=True, 
+        gridwidth=1, 
+        gridcolor='rgba(128,128,128,0.2)',
+        showline=True,
+        linewidth=2,
+        linecolor='rgba(128,128,128,0.3)'
     )
     
     return json.dumps(fig, cls=PlotlyJSONEncoder)
