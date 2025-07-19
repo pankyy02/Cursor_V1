@@ -220,6 +220,62 @@ const App = () => {
     }
   };
 
+  const handleRealTimeSearch = async () => {
+    if (!perplexityKey.trim()) {
+      setError("Please enter your Perplexity API key");
+      return;
+    }
+    if (!realTimeSearch.trim()) {
+      setError("Please enter a search query");
+      return;
+    }
+
+    setLoadingState('search', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/perplexity-search`, {
+        query: realTimeSearch,
+        api_key: perplexityKey,
+        search_focus: "pharmaceutical"
+      });
+
+      setPerplexityResults(response.data);
+      setActiveTab("search");
+    } catch (error) {
+      console.error("Real-time search error:", error);
+      setError(error.response?.data?.detail || "Real-time search failed. Please check your Perplexity API key.");
+    } finally {
+      setLoadingState('search', false);
+    }
+  };
+
+  const handleEnhancedCompetitive = async () => {
+    if (!analysis || !apiKey.trim()) {
+      setError("Please complete therapy area analysis first");
+      return;
+    }
+
+    setLoadingState('competitive', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/enhanced-competitive-analysis`, {
+        therapy_area: therapyArea,
+        analysis_id: analysis.id,
+        api_key: apiKey  // Using Claude key for both - can be separated later
+      });
+
+      setCompetitiveData(response.data.competitive_landscape);
+      setActiveTab("competitive");
+    } catch (error) {
+      console.error("Enhanced competitive analysis error:", error);
+      setError(error.response?.data?.detail || "Enhanced competitive analysis failed. Please try again.");
+    } finally {
+      setLoadingState('competitive', false);
+    }
+  };
+
   const handleSearchTrials = async () => {
     if (!therapyArea.trim()) {
       setError("Please enter a therapy area first");
