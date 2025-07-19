@@ -681,8 +681,20 @@ const App = () => {
                   {loadingStates.analysis ? 'Analyzing...' : '🔬 Comprehensive Analysis'}
                 </button>
 
-                {analysis && (
+                {analysis && perplexityKey && (
                   <>
+                    <button
+                      onClick={handleEnsembleAnalysis}
+                      disabled={loadingStates.ensemble}
+                      className={`w-full px-4 py-3 rounded-md font-medium transition-colors mb-3 ${
+                        loadingStates.ensemble
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
+                      }`}
+                    >
+                      {loadingStates.ensemble ? 'Analyzing...' : '🤖 Multi-Model Ensemble Analysis'}
+                    </button>
+
                     <button
                       onClick={handleGenerateFunnel}
                       disabled={loadingStates.funnel}
