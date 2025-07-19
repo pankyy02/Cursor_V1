@@ -391,6 +391,331 @@ def create_scenario_comparison_chart(scenario_models, therapy_area="", product_n
     
     return json.dumps(fig, cls=PlotlyJSONEncoder)
 
+# Interactive Timeline Functions
+async def generate_timeline(therapy_area: str, product_name: str, analysis_id: str, 
+                          include_competitive: bool, api_key: str) -> Timeline:
+    """Generate interactive timeline with milestones"""
+    try:
+        # Get current analysis data
+        analysis = await db.therapy_analyses.find_one({"id": analysis_id})
+        if not analysis:
+            raise Exception("Analysis not found")
+        
+        # Generate timeline milestones using AI
+        timeline_query = f"""
+        Create a comprehensive timeline of key milestones for {therapy_area}{f' - {product_name}' if product_name else ''}:
+        
+        Include:
+        1. REGULATORY MILESTONES (FDA submissions, approvals, European approvals)
+        2. CLINICAL DEVELOPMENT (Phase I/II/III start dates, data readouts, publications)
+        3. COMMERCIAL MILESTONES (launch dates, market expansions, uptake milestones)
+        4. COMPETITIVE EVENTS (competitor approvals, new entrants, patent expiries)
+        5. MARKET ACCESS (reimbursement decisions, pricing announcements)
+        
+        Provide realistic dates based on current pharmaceutical development timelines.
+        Format as structured data with dates, milestone types, and descriptions.
+        """
+        
+        # Use Perplexity for real-time milestone data
+        result = await search_with_perplexity(timeline_query, api_key, "timeline_milestones")
+        
+        # Parse timeline data
+        milestones = parse_timeline_milestones(result.content, product_name or therapy_area)
+        
+        # Get competitive milestones if requested
+        competitive_milestones = []
+        if include_competitive:
+            competitive_query = f"""
+            Key competitive milestones and events in {therapy_area} over the next 5 years:
+            - Competitor product launches and approvals
+            - Patent expiries and generic entries  
+            - New clinical trial initiations
+            - Partnership announcements
+            - Market access decisions
+            """
+            
+            comp_result = await search_with_perplexity(competitive_query, api_key, "competitive_milestones")
+            competitive_milestones = parse_timeline_milestones(comp_result.content, "competitive", is_competitive=True)
+        
+        # Generate regulatory timeline
+        regulatory_timeline = generate_regulatory_timeline(therapy_area, product_name)
+        
+        # Create visualization data
+        visualization_data = create_timeline_visualization(milestones, competitive_milestones)
+        
+        return Timeline(
+            therapy_area=therapy_area,
+            product_name=product_name,
+            analysis_id=analysis_id,
+            milestones=milestones,
+            competitive_milestones=competitive_milestones,
+            regulatory_timeline=regulatory_timeline,
+            visualization_data=visualization_data
+        )
+        
+    except Exception as e:
+        logging.error(f"Timeline generation error: {str(e)}")
+        return Timeline(
+            therapy_area=therapy_area,
+            product_name=product_name or "Unknown",
+            analysis_id=analysis_id,
+            milestones=[{"error": str(e), "date": "2024-01-01", "type": "error"}],
+            competitive_milestones=[],
+            regulatory_timeline={"error": str(e)},
+            visualization_data={"error": str(e)}
+        )
+
+def parse_timeline_milestones(content: str, context: str, is_competitive: bool = False) -> List[Dict[str, Any]]:
+    """Parse AI-generated content into structured timeline milestones"""
+    try:
+        milestones = []
+        lines = content.split('\n')
+        
+        current_year = 2024
+        milestone_types = {
+            'clinical': ['phase', 'trial', 'study', 'data', 'results'],
+            'regulatory': ['fda', 'approval', 'submission', 'filing', 'ema'],
+            'commercial': ['launch', 'market', 'sales', 'revenue'],
+            'competitive': ['competitor', 'generic', 'patent', 'expiry']
+        }
+        
+        for line in lines:
+            line = line.strip()
+            if not line or len(line) < 10:
+                continue
+            
+            # Extract date patterns
+            import re
+            date_patterns = [
+                r'20[2-3][0-9]',  # Years 2020-2039
+                r'[Qq][1-4]\s*20[2-3][0-9]',  # Q1 2024
+                r'(January|February|March|April|May|June|July|August|September|October|November|December)\s*20[2-3][0-9]'
+            ]
+            
+            extracted_date = None
+            for pattern in date_patterns:
+                match = re.search(pattern, line)
+                if match:
+                    date_str = match.group(0)
+                    # Convert to standard format
+                    if 'Q' in date_str:
+                        year = re.search(r'20[2-3][0-9]', date_str).group(0)
+                        quarter = re.search(r'[1-4]', date_str).group(0)
+                        month = int(quarter) * 3
+                        extracted_date = f"{year}-{month:02d}-01"
+                    elif any(month in date_str for month in ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']):
+                        # Handle month year format
+                        year = re.search(r'20[2-3][0-9]', date_str).group(0)
+                        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                        for i, month_name in enumerate(month_names):
+                            if month_name in date_str:
+                                extracted_date = f"{year}-{i+1:02d}-01"
+                                break
+                    else:
+                        # Just year
+                        extracted_date = f"{date_str}-01-01"
+                    break
+            
+            # If no date found, estimate based on content
+            if not extracted_date:
+                if any(word in line.lower() for word in ['current', 'ongoing', 'now']):
+                    extracted_date = "2024-01-01"
+                elif any(word in line.lower() for word in ['next', 'upcoming', 'planned']):
+                    extracted_date = "2025-01-01"
+                else:
+                    extracted_date = f"{current_year + len(milestones) // 2}-01-01"
+            
+            # Determine milestone type
+            milestone_type = "general"
+            for mtype, keywords in milestone_types.items():
+                if any(keyword in line.lower() for keyword in keywords):
+                    milestone_type = mtype
+                    break
+            
+            # Extract importance/priority
+            priority = "medium"
+            if any(word in line.lower() for word in ['major', 'key', 'critical', 'important']):
+                priority = "high"
+            elif any(word in line.lower() for word in ['minor', 'small', 'routine']):
+                priority = "low"
+            
+            milestones.append({
+                "date": extracted_date,
+                "title": line[:80] + "..." if len(line) > 80 else line,
+                "description": line,
+                "type": milestone_type,
+                "priority": priority,
+                "source": "ai_generated",
+                "context": context,
+                "is_competitive": is_competitive,
+                "confidence": 0.7 if any(word in line.lower() for word in ['approved', 'announced', 'confirmed']) else 0.5
+            })
+        
+        # Sort by date
+        milestones.sort(key=lambda x: x["date"])
+        
+        return milestones[:20]  # Limit to top 20 milestones
+        
+    except Exception as e:
+        return [{
+            "date": "2024-01-01",
+            "title": f"Timeline parsing error: {str(e)}",
+            "description": str(e),
+            "type": "error",
+            "priority": "high",
+            "source": "error"
+        }]
+
+def generate_regulatory_timeline(therapy_area: str, product_name: str) -> Dict[str, Any]:
+    """Generate standard regulatory timeline"""
+    try:
+        # Standard pharmaceutical regulatory timeline
+        current_year = 2024
+        
+        regulatory_phases = [
+            {"phase": "IND Filing", "duration_months": 0, "description": "Investigational New Drug application"},
+            {"phase": "Phase I", "duration_months": 12, "description": "Safety and dosage studies"},
+            {"phase": "Phase II", "duration_months": 24, "description": "Efficacy and side effects"},
+            {"phase": "Phase III", "duration_months": 36, "description": "Large-scale efficacy studies"},
+            {"phase": "NDA/BLA Filing", "duration_months": 6, "description": "New Drug Application submission"},
+            {"phase": "FDA Review", "duration_months": 12, "description": "Standard review process"},
+            {"phase": "Approval", "duration_months": 0, "description": "FDA approval decision"},
+            {"phase": "Launch", "duration_months": 6, "description": "Commercial launch"}
+        ]
+        
+        timeline = []
+        cumulative_months = 0
+        
+        for phase in regulatory_phases:
+            start_date = f"{current_year + cumulative_months // 12}-{(cumulative_months % 12) + 1:02d}-01"
+            cumulative_months += phase["duration_months"]
+            end_date = f"{current_year + cumulative_months // 12}-{(cumulative_months % 12) + 1:02d}-01" if phase["duration_months"] > 0 else start_date
+            
+            timeline.append({
+                "phase": phase["phase"],
+                "start_date": start_date,
+                "end_date": end_date,
+                "duration_months": phase["duration_months"],
+                "description": phase["description"],
+                "critical_path": True if phase["phase"] in ["Phase III", "NDA/BLA Filing", "FDA Review"] else False
+            })
+        
+        return {
+            "timeline": timeline,
+            "total_duration_years": cumulative_months / 12,
+            "critical_path_phases": [p["phase"] for p in timeline if p.get("critical_path")],
+            "estimated_launch_date": timeline[-1]["start_date"],
+            "therapy_area": therapy_area,
+            "product_name": product_name
+        }
+        
+    except Exception as e:
+        return {
+            "timeline": [],
+            "error": f"Regulatory timeline generation failed: {str(e)}",
+            "total_duration_years": 0
+        }
+
+def create_timeline_visualization(milestones: List[Dict], competitive_milestones: List[Dict] = None) -> Dict[str, str]:
+    """Create timeline visualization charts"""
+    try:
+        # Combine all milestones for visualization
+        all_milestones = milestones.copy()
+        if competitive_milestones:
+            all_milestones.extend(competitive_milestones)
+        
+        if not all_milestones:
+            return {"error": "No milestones to visualize"}
+        
+        # Sort by date
+        all_milestones.sort(key=lambda x: x["date"])
+        
+        # Create Gantt-style timeline
+        fig = go.Figure()
+        
+        # Color mapping for milestone types
+        colors = {
+            "clinical": "#3498db",
+            "regulatory": "#e74c3c", 
+            "commercial": "#2ecc71",
+            "competitive": "#f39c12",
+            "general": "#95a5a6"
+        }
+        
+        for i, milestone in enumerate(all_milestones):
+            milestone_type = milestone.get("type", "general")
+            color = colors.get(milestone_type, "#95a5a6")
+            
+            # Create timeline bar
+            fig.add_trace(go.Scatter(
+                x=[milestone["date"], milestone["date"]],
+                y=[i, i],
+                mode='markers+text',
+                marker=dict(
+                    size=15,
+                    color=color,
+                    symbol='diamond' if milestone.get("is_competitive") else 'circle',
+                    line=dict(width=2, color='white')
+                ),
+                text=milestone["title"][:30] + "..." if len(milestone["title"]) > 30 else milestone["title"],
+                textposition="middle right",
+                name=milestone_type.title(),
+                hovertemplate=f"<b>{milestone['title']}</b><br>" +
+                             f"Date: {milestone['date']}<br>" +
+                             f"Type: {milestone_type}<br>" +
+                             f"Priority: {milestone.get('priority', 'medium')}<br>" +
+                             "<extra></extra>",
+                showlegend=True if i == 0 or milestone_type not in [m.get("type") for m in all_milestones[:i]] else False
+            ))
+        
+        fig.update_layout(
+            title="Pharmaceutical Development Timeline",
+            xaxis_title="Date",
+            yaxis=dict(
+                title="Milestones",
+                showticklabels=False
+            ),
+            height=max(400, len(all_milestones) * 25),
+            showlegend=True,
+            legend=dict(x=1.05, y=1),
+            hovermode='closest'
+        )
+        
+        timeline_chart = json.dumps(fig, cls=PlotlyJSONEncoder)
+        
+        # Create milestone distribution chart
+        type_counts = {}
+        for milestone in all_milestones:
+            mtype = milestone.get("type", "general")
+            type_counts[mtype] = type_counts.get(mtype, 0) + 1
+        
+        fig2 = go.Figure(data=[
+            go.Bar(
+                x=list(type_counts.keys()),
+                y=list(type_counts.values()),
+                marker_color=[colors.get(t, "#95a5a6") for t in type_counts.keys()]
+            )
+        ])
+        
+        fig2.update_layout(
+            title="Milestone Distribution by Type",
+            xaxis_title="Milestone Type",
+            yaxis_title="Count",
+            height=300
+        )
+        
+        distribution_chart = json.dumps(fig2, cls=PlotlyJSONEncoder)
+        
+        return {
+            "timeline_chart": timeline_chart,
+            "distribution_chart": distribution_chart,
+            "milestone_count": len(all_milestones),
+            "competitive_milestone_count": len([m for m in all_milestones if m.get("is_competitive")])
+        }
+        
+    except Exception as e:
+        return {"error": f"Timeline visualization creation failed: {str(e)}"}
+
 # Advanced Financial Modeling Functions
 import numpy as np
 from scipy import stats
