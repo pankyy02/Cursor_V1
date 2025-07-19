@@ -116,6 +116,11 @@ class PharmaAPITester:
                                    f"Analysis generated successfully. ID: {self.analysis_id[:8]}..., "
                                    f"Competitive data: {has_competitive}, Clinical trials: {has_trials}")
                 return True
+            elif response.status_code == 500 and "authentication_error" in response.text:
+                # API key authentication issue - this is expected without valid key
+                self.log_test_result("Therapy Analysis", False, 
+                                   "API key authentication required - endpoint structure validated")
+                return False
             else:
                 error_detail = response.text
                 self.log_test_result("Therapy Analysis", False, 
