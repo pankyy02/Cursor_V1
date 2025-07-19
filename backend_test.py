@@ -575,6 +575,7 @@ class PharmaAPITester:
         # Test sequence
         tests = [
             ("API Health Check", self.test_api_health),
+            ("Database Connection", self.test_database_connection),
             ("Core Analysis Endpoint", self.test_therapy_analysis),
             ("Funnel Generation", self.test_funnel_generation),
             ("Competitive Intelligence", self.test_competitive_analysis),
