@@ -1,8 +1,8 @@
 {
-  "total_tests": 16,
-  "passed": 9,
-  "failed": 7,
-  "success_rate": 56.25,
+  "total_tests": 23,
+  "passed": 14,
+  "failed": 9,
+  "success_rate": 60.86956521739131,
   "results": {
     "API Health Check": true,
     "Database Connection": true,
@@ -19,103 +19,152 @@
     "Perplexity Pharmaceutical Search": false,
     "Enhanced Competitive Analysis": false,
     "Perplexity Error Handling": false,
-    "Perplexity Data Storage": true
+    "Perplexity Data Storage": true,
+    "Company Intelligence - Qinlock": true,
+    "Company Intelligence - Keytruda": true,
+    "Company Intelligence - Competitive Discovery": false,
+    "Company Intelligence - Investor Relations": false,
+    "Company Intelligence - Error Handling": true,
+    "Company Intelligence - Data Persistence": true,
+    "Company Intelligence - Timeout Handling": true
   },
   "test_details": {
     "API Health Check": {
       "success": true,
       "details": "API responding: Pharma Forecasting Consultant API v2.0",
-      "timestamp": "2025-07-19T16:32:30.154522",
+      "timestamp": "2025-07-19T17:02:12.644390",
       "response_data": null
     },
     "Database Connection": {
       "success": true,
       "details": "MongoDB connection working, CRUD operations successful",
-      "timestamp": "2025-07-19T16:32:30.218150",
+      "timestamp": "2025-07-19T17:02:12.675235",
       "response_data": null
     },
     "Existing Data Retrieval": {
       "success": true,
       "details": "Found 5 existing analyses, Using ID: bfba7feb... (GIST)",
-      "timestamp": "2025-07-19T16:32:30.239783",
+      "timestamp": "2025-07-19T17:02:12.697486",
       "response_data": null
     },
     "Therapy Analysis": {
       "success": false,
       "details": "API key authentication required - endpoint structure validated",
-      "timestamp": "2025-07-19T16:32:32.525224",
+      "timestamp": "2025-07-19T17:02:15.269099",
       "response_data": null
     },
     "Funnel Generation": {
       "success": false,
       "details": "HTTP 500: {\"detail\":\"Funnel generation failed: Failed to generate chat completion: litellm.AuthenticationError: AnthropicException - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"authentication_error\\\",\\\"message\\\":\\\"invalid x-api-key\\\"}}\"}",
-      "timestamp": "2025-07-19T16:32:32.715235",
+      "timestamp": "2025-07-19T17:02:15.442278",
       "response_data": null
     },
     "Competitive Analysis": {
       "success": false,
       "details": "Found 1 competitors, 0 real pharma companies, Market dynamics: True, Pipeline: True, Clinical trials: 0",
-      "timestamp": "2025-07-19T16:32:33.085962",
+      "timestamp": "2025-07-19T17:02:15.813764",
       "response_data": null
     },
     "Scenario Modeling": {
       "success": true,
       "details": "3 scenarios generated, Peak revenues: Opt=540M, Real=900M, Pess=1620M, Logical ordering: False, Visualization: True",
-      "timestamp": "2025-07-19T16:32:33.512840",
+      "timestamp": "2025-07-19T17:02:16.036647",
       "response_data": null
     },
     "Clinical Trials Search": {
       "success": true,
       "details": "Found 0 clinical trials",
-      "timestamp": "2025-07-19T16:32:33.699211",
+      "timestamp": "2025-07-19T17:02:16.220204",
       "response_data": null
     },
     "Export Functionality": {
       "success": true,
       "details": "PDF: True, Excel: True",
-      "timestamp": "2025-07-19T16:32:33.751072",
+      "timestamp": "2025-07-19T17:02:16.274256",
       "response_data": null
     },
     "Data Persistence": {
       "success": false,
       "details": "Therapy area mismatch",
-      "timestamp": "2025-07-19T16:32:33.764392",
+      "timestamp": "2025-07-19T17:02:16.291376",
       "response_data": null
     },
     "Visualization Data": {
       "success": true,
       "details": "Generated charts: funnel, scenario, market",
-      "timestamp": "2025-07-19T16:32:33.776769",
+      "timestamp": "2025-07-19T17:02:16.303359",
       "response_data": null
     },
     "Perplexity Search Endpoint": {
       "success": true,
       "details": "Search successful. Content length: 68, Citations: 0, Relevance score: 0/5",
-      "timestamp": "2025-07-19T16:32:33.965421",
+      "timestamp": "2025-07-19T17:02:16.467391",
       "response_data": null
     },
     "Perplexity Pharmaceutical Search": {
       "success": false,
       "details": "Pharmaceutical terms found: 0/5, Valid citations: 0/0, Content quality: Basic",
-      "timestamp": "2025-07-19T16:32:34.182132",
+      "timestamp": "2025-07-19T17:02:16.601702",
       "response_data": null
     },
     "Enhanced Competitive Analysis": {
       "success": false,
       "details": "Real-time intel: True, Enhanced analysis: True, Sources: 0, Analysis type: Error",
-      "timestamp": "2025-07-19T16:32:34.506349",
+      "timestamp": "2025-07-19T17:02:16.859123",
       "response_data": null
     },
     "Perplexity Error Handling": {
       "success": false,
       "details": "Expected 500 error, got 200",
-      "timestamp": "2025-07-19T16:32:34.629274",
+      "timestamp": "2025-07-19T17:02:17.019397",
       "response_data": null
     },
     "Perplexity Data Storage": {
       "success": true,
       "details": "Storage fields present: True, Valid timestamp: True, Query: 'Test query for database storag...'",
-      "timestamp": "2025-07-19T16:32:34.753728",
+      "timestamp": "2025-07-19T17:02:17.142765",
+      "response_data": null
+    },
+    "Company Intelligence - Qinlock": {
+      "success": true,
+      "details": "Parent company: Unknown Company, Expected company identified: False, Market class: Unknown Class, Class identified: False, Competitors found: 1, Sources: 0",
+      "timestamp": "2025-07-19T17:02:19.022713",
+      "response_data": null
+    },
+    "Company Intelligence - Keytruda": {
+      "success": true,
+      "details": "Parent company: Unknown Company, Merck identified: False, Market class: Unknown Class, Class identified: False, Competitors: 1, Known competitors found: 0",
+      "timestamp": "2025-07-19T17:02:20.560351",
+      "response_data": null
+    },
+    "Company Intelligence - Competitive Discovery": {
+      "success": false,
+      "details": "Total competitors: 1, Valid structure: 1, GIST-related: 0, Known GIST drugs: 0, Therapy area matches: 1",
+      "timestamp": "2025-07-19T17:02:22.081750",
+      "response_data": null
+    },
+    "Company Intelligence - Investor Relations": {
+      "success": false,
+      "details": "Structure complete: True, Press releases: 0 (valid: 0), Financial highlights: 0, Sources accessed: 0, Presentations: 0, Financial metrics: True",
+      "timestamp": "2025-07-19T17:02:23.530018",
+      "response_data": null
+    },
+    "Company Intelligence - Error Handling": {
+      "success": true,
+      "details": "Structure maintained: True, Fallback company: True, Fallback class: True, Investor error handling: False, Competitor error handling: False",
+      "timestamp": "2025-07-19T17:02:25.020664",
+      "response_data": null
+    },
+    "Company Intelligence - Data Persistence": {
+      "success": true,
+      "details": "Storage and retrieval successful, Required fields: True, Product match: True, Valid timestamp: True",
+      "timestamp": "2025-07-19T17:02:26.514317",
+      "response_data": null
+    },
+    "Company Intelligence - Timeout Handling": {
+      "success": true,
+      "details": "Response time: 3.34s, Reasonable time: True, Basic structure: True, Timeout handling: True",
+      "timestamp": "2025-07-19T17:02:29.853397",
       "response_data": null
     }
   },
