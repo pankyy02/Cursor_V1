@@ -311,6 +311,7 @@ test_plan:
   current_focus:
     - "API Key Integration"
     - "Data Persistence Validation Logic"
+    - "Frontend Integration Testing"
   stuck_tasks:
     - "Core Analysis Endpoint"
     - "Funnel Generation"
