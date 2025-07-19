@@ -179,6 +179,9 @@ const App = () => {
       return;
     }
 
+    setLoadingState('trials', true);
+    setError("");
+
     try {
       const response = await axios.get(`${API}/search/clinical-trials`, {
         params: { therapy_area: therapyArea }
@@ -188,6 +191,8 @@ const App = () => {
     } catch (error) {
       console.error("Clinical trials search error:", error);
       setError("Failed to search clinical trials");
+    } finally {
+      setLoadingState('trials', false);
     }
   };
 
