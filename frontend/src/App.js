@@ -904,21 +904,57 @@ const App = () => {
               <h1 className="text-xl font-bold text-gray-900">Pharma Intelligence Platform</h1>
             </div>
             <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors flex items-center space-x-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>History</span>
-              </button>
-              <button
-                onClick={resetForm}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                New Analysis
-              </button>
+              {isAuthenticated ? (
+                <>
+                  <span className="text-sm text-gray-600">
+                    Welcome, {currentUser?.first_name}
+                  </span>
+                  <div className={`px-2 py-1 text-xs rounded ${
+                    currentUser?.subscription_tier === 'enterprise' ? 'bg-purple-100 text-purple-800' :
+                    currentUser?.subscription_tier === 'professional' ? 'bg-blue-100 text-blue-800' :
+                    currentUser?.subscription_tier === 'basic' ? 'bg-green-100 text-green-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {currentUser?.subscription_tier === 'free' ? 'Free' : currentUser?.subscription_tier?.charAt(0).toUpperCase() + currentUser?.subscription_tier?.slice(1)}
+                  </div>
+                  <button
+                    onClick={() => setShowHistory(!showHistory)}
+                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors flex items-center space-x-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>History</span>
+                  </button>
+                  <button
+                    onClick={resetForm}
+                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                  >
+                    New Analysis
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 text-sm text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setShowLoginModal(true)}
+                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                  >
+                    Login
+                  </button>
+                  <button
+                    onClick={() => setShowRegisterModal(true)}
+                    className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                  >
+                    Sign Up
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
