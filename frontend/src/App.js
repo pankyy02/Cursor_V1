@@ -465,6 +465,23 @@ const App = () => {
             <div className="bg-white rounded-xl shadow-lg p-6 sticky top-8">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Configuration</h3>
               
+              {/* Perplexity API Key Input */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Perplexity API Key (Optional)
+                </label>
+                <input
+                  type="password"
+                  value={perplexityKey}
+                  onChange={(e) => setPerplexityKey(e.target.value)}
+                  placeholder="pplx-..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  For enhanced real-time search capabilities
+                </p>
+              </div>
+
               {/* API Key Input */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
