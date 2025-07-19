@@ -52,6 +52,31 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
+class EnsembleAnalysisRequest(BaseModel):
+    therapy_area: str
+    product_name: Optional[str] = None
+    analysis_type: str = "comprehensive"  # "competitive", "forecasting", "comprehensive"
+    claude_api_key: str
+    perplexity_api_key: str
+    gemini_api_key: Optional[str] = None
+    use_gemini: bool = False
+    confidence_threshold: float = 0.7
+
+class EnsembleResult(BaseModel):
+    therapy_area: str
+    product_name: Optional[str]
+    claude_analysis: Dict[str, Any]
+    perplexity_intelligence: Dict[str, Any]
+    gemini_analysis: Optional[Dict[str, Any]] = None
+    ensemble_synthesis: str
+    confidence_scores: Dict[str, float]
+    consensus_insights: List[str]
+    conflicting_points: List[str]
+    recommendation: str
+    model_agreement_score: float
+    sources: List[str]
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
 class CompanyIntelRequest(BaseModel):
     product_name: str
     therapy_area: Optional[str] = None
