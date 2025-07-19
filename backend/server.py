@@ -438,7 +438,139 @@ class UserProfile(BaseModel):
     recent_analyses: List[str] = Field(default_factory=list)
     favorite_analyses: List[str] = Field(default_factory=list)
 
-# Utility functions for data visualization
+# Phase 4: Configuration and Security
+# Subscription Plans Configuration
+SUBSCRIPTION_PLANS = {
+    "basic": {
+        "id": "basic",
+        "name": "Basic Plan",
+        "price": 29.00,
+        "stripe_price_id": "price_basic_monthly",  # Replace with actual Stripe price ID
+        "features": [
+            "Core Therapy Analysis",
+            "Patient Flow Funnel",
+            "Basic Competitive Intelligence",
+            "Export to PDF/Excel",
+            "5 Analyses per month"
+        ],
+        "api_limits": {
+            "monthly_analyses": 5,
+            "daily_api_calls": 50
+        },
+        "description": "Perfect for individual researchers and small pharma teams"
+    },
+    "professional": {
+        "id": "professional", 
+        "name": "Professional Plan",
+        "price": 99.00,
+        "stripe_price_id": "price_pro_monthly",  # Replace with actual Stripe price ID
+        "features": [
+            "Everything in Basic",
+            "Real-World Evidence Analysis",
+            "Market Access Intelligence", 
+            "Predictive Analytics",
+            "Multi-Model AI Ensemble",
+            "Advanced Financial Modeling",
+            "Custom Templates",
+            "25 Analyses per month",
+            "Priority Support"
+        ],
+        "api_limits": {
+            "monthly_analyses": 25,
+            "daily_api_calls": 200
+        },
+        "description": "For pharma professionals requiring advanced analytics"
+    },
+    "enterprise": {
+        "id": "enterprise",
+        "name": "Enterprise Plan", 
+        "price": 299.00,
+        "stripe_price_id": "price_enterprise_monthly",  # Replace with actual Stripe price ID
+        "features": [
+            "Everything in Professional",
+            "Automated Workflows",
+            "Smart Alerts & Monitoring",
+            "Portfolio Management",
+            "API Access",
+            "Custom Integrations",
+            "Unlimited Analyses",
+            "Priority Support",
+            "Dedicated Account Manager"
+        ],
+        "api_limits": {
+            "monthly_analyses": -1,  # Unlimited
+            "daily_api_calls": -1    # Unlimited
+        },
+        "description": "For large pharma companies and enterprise teams"
+    }
+}
+
+# Security Configuration
+security = HTTPBearer()
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', secrets.token_urlsafe(32))
+JWT_ALGORITHM = "HS256"
+SESSION_EXPIRE_HOURS = 24
+
+# Password hashing utilities
+def hash_password(password: str) -> str:
+    """Hash password using SHA-256 with salt"""
+    salt = secrets.token_hex(16)
+    password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+    return f"{salt}:{password_hash}"
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """Verify password against hash"""
+    try:
+        salt, stored_hash = password_hash.split(':')
+        password_hash_check = hashlib.sha256((password + salt).encode()).hexdigest()
+        return stored_hash == password_hash_check
+    except:
+        return False
+
+def generate_session_token() -> str:
+    """Generate secure session token"""
+    return secrets.token_urlsafe(32)
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Optional[User]:
+    """Get current user from session token"""
+    try:
+        session = await db.user_sessions.find_one({
+            "session_token": credentials.credentials,
+            "expires_at": {"$gt": datetime.utcnow()}
+        })
+        
+        if not session:
+            return None
+            
+        user = await db.users.find_one({"id": session["user_id"]})
+        if not user:
+            return None
+            
+        # Update last accessed
+        await db.user_sessions.update_one(
+            {"id": session["id"]},
+            {"$set": {"last_accessed": datetime.utcnow()}}
+        )
+        
+        return User(**user)
+    except:
+        return None
+
+async def require_subscription(user: User, required_tier: str = "basic") -> bool:
+    """Check if user has required subscription tier"""
+    tier_hierarchy = {"free": 0, "basic": 1, "professional": 2, "enterprise": 3}
+    user_level = tier_hierarchy.get(user.subscription_tier, 0)
+    required_level = tier_hierarchy.get(required_tier, 1)
+    
+    return user_level >= required_level and user.subscription_status == "active"
+
+# Initialize Stripe
+stripe_api_key = os.environ.get('STRIPE_API_KEY')
+if not stripe_api_key:
+    logger.error("STRIPE_API_KEY not found in environment variables")
+    raise ValueError("STRIPE_API_KEY is required")
+
+# Utility functions
 def create_funnel_chart(funnel_stages):
     """Create a funnel visualization chart"""
     if not funnel_stages:
