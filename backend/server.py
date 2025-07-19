@@ -115,20 +115,46 @@ class ResearchResult(BaseModel):
 # Utility functions for data visualization
 def create_funnel_chart(funnel_stages):
     """Create a funnel visualization chart"""
+    if not funnel_stages:
+        return None
+        
     stages = [stage['stage'] for stage in funnel_stages]
-    percentages = [float(stage['percentage'].replace('%', '')) for stage in funnel_stages]
+    # Extract numeric values from percentages
+    values = []
+    for stage in funnel_stages:
+        percentage_str = stage.get('percentage', '100%')
+        try:
+            # Extract number from percentage string
+            numeric_val = float(percentage_str.replace('%', '').strip())
+            values.append(numeric_val)
+        except:
+            values.append(100)  # Default fallback
     
+    # Create funnel chart with Plotly
     fig = go.Figure(go.Funnel(
         y=stages,
-        x=percentages,
-        textinfo="value+percent initial",
-        marker_color=["deepskyblue", "lightsalmon", "tan", "teal", "silver", "gold"][:len(stages)]
+        x=values,
+        textposition="inside",
+        texttemplate="%{y}<br>%{x}%",
+        textfont=dict(color="white", size=14),
+        connector={"line": {"color": "royalblue", "dash": "solid", "width": 3}},
+        marker={"color": ["deepskyblue", "lightsalmon", "tan", "teal", "silver", "gold"][:len(stages)],
+                "line": {"width": [4, 2, 2, 3, 1, 1][:len(stages)], "color": ["wheat", "wheat", "wheat", "wheat", "wheat", "wheat"][:len(stages)]}}
     ))
     
     fig.update_layout(
-        title="Patient Flow Funnel",
-        font_size=12,
-        showlegend=False
+        title={
+            'text': "Patient Flow Funnel - Treatment Journey",
+            'x': 0.5,
+            'xanchor': 'center',
+            'font': {'size': 18, 'family': 'Arial, sans-serif'}
+        },
+        font=dict(size=12, family="Arial, sans-serif"),
+        showlegend=False,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=500,
+        margin=dict(t=80, b=50, l=50, r=50)
     )
     
     return json.dumps(fig, cls=PlotlyJSONEncoder)
