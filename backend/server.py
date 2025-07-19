@@ -1,5 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.sessions import SessionMiddleware
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
