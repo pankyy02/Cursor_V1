@@ -37,6 +37,10 @@ const App = () => {
   const [companyIntelligence, setCompanyIntelligence] = useState(null);
   const [ensembleResult, setEnsembleResult] = useState(null);
   const [geminiKey, setGeminiKey] = useState("");
+  const [financialModel, setFinancialModel] = useState(null);
+  const [timeline, setTimeline] = useState(null);
+  const [customTemplate, setCustomTemplate] = useState(null);
+  const [advancedViz, setAdvancedViz] = useState(null);
 
   const setLoadingState = (operation, isLoading) => {
     setLoadingStates(prev => ({
