@@ -5874,6 +5874,7 @@ async def create_checkout_session(request: Request):
         
         # Store payment transaction
         payment_transaction = PaymentTransaction(
+            session_id=session.session_id,  # Add this field
             stripe_session_id=session.session_id,
             amount=plan["price"],
             currency="usd",
