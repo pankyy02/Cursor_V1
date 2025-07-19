@@ -27,7 +27,11 @@ const App = () => {
     rwe: false,
     market_access: false,
     predictive: false,
-    dashboard: false
+    dashboard: false,
+    login: false,
+    register: false,
+    payment: false,
+    workflows: false
   });
   const [analysis, setAnalysis] = useState(null);
   const [funnel, setFunnel] = useState(null);
