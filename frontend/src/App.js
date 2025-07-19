@@ -2913,6 +2913,25 @@ const App = () => {
                         <h4 className="font-semibold text-gray-900">Export & Reporting</h4>
                         <p className="text-sm">PDF reports, Excel models & presentation-ready outputs</p>
                       </div>
+
+                      {/* Phase 3: New Features */}
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+                        <div className="text-2xl mb-2">🔬</div>
+                        <h4 className="font-semibold text-gray-900">Real-World Evidence</h4>
+                        <p className="text-sm">RWE analysis, effectiveness studies & patient outcomes</p>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-lg border border-teal-200">
+                        <div className="text-2xl mb-2">🏥</div>
+                        <h4 className="font-semibold text-gray-900">Market Access Intelligence</h4>
+                        <p className="text-sm">Payer landscape, reimbursement & regulatory pathways</p>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-200">
+                        <div className="text-2xl mb-2">🔮</div>
+                        <h4 className="font-semibold text-gray-900">Predictive Analytics</h4>
+                        <p className="text-sm">ML-enhanced forecasting & competitive response modeling</p>
+                      </div>
                     </div>
                     
                     <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
