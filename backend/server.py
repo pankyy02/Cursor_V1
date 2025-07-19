@@ -52,9 +52,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+client = AsyncIOMotorClient(os.environ.get('MONGO_URL', 'mongodb://localhost:27017'))
+db = client[os.environ.get('DB_NAME', 'pharma_intelligence')]
 
 # Create the main app without a prefix
 app = FastAPI()
