@@ -103,6 +103,36 @@ class PharmaAPITester:
             self.log_test_result("Database Connection", False, f"Exception: {str(e)}")
             return False
     
+    async def test_existing_data_retrieval(self) -> bool:
+        """Test retrieval of existing analyses for testing dependent endpoints"""
+        try:
+            # Check if there are existing analyses we can use
+            response = await self.client.get(f"{API_BASE_URL}/analyses")
+            
+            if response.status_code == 200:
+                analyses = response.json()
+                if analyses and len(analyses) > 0:
+                    # Use the first available analysis for testing
+                    self.analysis_id = analyses[0].get("id")
+                    therapy_area = analyses[0].get("therapy_area", "Unknown")
+                    
+                    self.log_test_result("Existing Data Retrieval", True, 
+                                       f"Found {len(analyses)} existing analyses, "
+                                       f"Using ID: {self.analysis_id[:8]}... ({therapy_area})")
+                    return True
+                else:
+                    self.log_test_result("Existing Data Retrieval", True, 
+                                       "No existing analyses found - will test creation endpoints")
+                    return True
+            else:
+                self.log_test_result("Existing Data Retrieval", False, 
+                                   f"Failed to retrieve analyses: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Existing Data Retrieval", False, f"Exception: {str(e)}")
+            return False
+    
     async def test_therapy_analysis(self) -> bool:
         """Test core therapy area analysis endpoint"""
         try:
