@@ -100,7 +100,7 @@ const App = () => {
       return;
     }
 
-    setIsLoading(true);
+    setLoadingState('funnel', true);
     setError("");
 
     try {
@@ -116,7 +116,7 @@ const App = () => {
       console.error("Funnel generation error:", error);
       setError(error.response?.data?.detail || "Funnel generation failed. Please try again.");
     } finally {
-      setIsLoading(false);
+      setLoadingState('funnel', false);
     }
   };
 
