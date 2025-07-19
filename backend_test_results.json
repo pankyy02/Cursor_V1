@@ -1,0 +1,74 @@
+{
+  "total_tests": 9,
+  "passed": 2,
+  "failed": 7,
+  "success_rate": 22.22222222222222,
+  "results": {
+    "API Health Check": true,
+    "Core Analysis Endpoint": false,
+    "Funnel Generation": false,
+    "Competitive Intelligence": false,
+    "Scenario Modeling": false,
+    "Clinical Trials Search": true,
+    "Export Functionality": false,
+    "Data Persistence": false,
+    "Visualization Data": false
+  },
+  "test_details": {
+    "API Health Check": {
+      "success": true,
+      "details": "API responding: Pharma Forecasting Consultant API v2.0",
+      "timestamp": "2025-07-19T15:16:11.035483",
+      "response_data": null
+    },
+    "Therapy Analysis": {
+      "success": false,
+      "details": "HTTP 500: {\"detail\":\"Analysis failed: Failed to generate chat completion: litellm.AuthenticationError: AnthropicException - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"authentication_error\\\",\\\"message\\\":\\\"invalid x-api-key\\\"}}\"}",
+      "timestamp": "2025-07-19T15:16:13.691253",
+      "response_data": null
+    },
+    "Funnel Generation": {
+      "success": false,
+      "details": "No analysis ID available",
+      "timestamp": "2025-07-19T15:16:13.691296",
+      "response_data": null
+    },
+    "Competitive Analysis": {
+      "success": false,
+      "details": "No analysis ID available",
+      "timestamp": "2025-07-19T15:16:13.691306",
+      "response_data": null
+    },
+    "Scenario Modeling": {
+      "success": false,
+      "details": "No analysis ID available",
+      "timestamp": "2025-07-19T15:16:13.691315",
+      "response_data": null
+    },
+    "Clinical Trials Search": {
+      "success": true,
+      "details": "Found 0 clinical trials",
+      "timestamp": "2025-07-19T15:16:13.909813",
+      "response_data": null
+    },
+    "Export Functionality": {
+      "success": false,
+      "details": "No analysis ID available",
+      "timestamp": "2025-07-19T15:16:13.909853",
+      "response_data": null
+    },
+    "Data Persistence": {
+      "success": false,
+      "details": "No analysis ID available",
+      "timestamp": "2025-07-19T15:16:13.909864",
+      "response_data": null
+    },
+    "Visualization Data": {
+      "success": false,
+      "details": "No analysis ID available",
+      "timestamp": "2025-07-19T15:16:13.909872",
+      "response_data": null
+    }
+  },
+  "analysis_id": null
+}
