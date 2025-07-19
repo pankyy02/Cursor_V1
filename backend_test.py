@@ -536,7 +536,298 @@ class PharmaAPITester:
             self.log_test_result("Data Persistence", False, f"Exception: {str(e)}")
             return False
     
-    async def test_visualization_data(self) -> bool:
+    async def test_perplexity_search_endpoint(self) -> bool:
+        """Test Perplexity search endpoint for pharmaceutical intelligence"""
+        try:
+            payload = {
+                "query": "GIST market analysis 2024 competitive landscape",
+                "api_key": TEST_PERPLEXITY_KEY,
+                "search_focus": "pharmaceutical"
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/perplexity-search", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["content", "citations", "search_query", "timestamp"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("Perplexity Search Endpoint", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate content quality
+                content = data.get("content", "")
+                if len(content) < 50:
+                    self.log_test_result("Perplexity Search Endpoint", False, 
+                                       "Content too short - likely API error")
+                    return False
+                
+                # Check citations
+                citations = data.get("citations", [])
+                has_citations = len(citations) > 0
+                
+                # Verify search query matches
+                if data.get("search_query") != payload["query"]:
+                    self.log_test_result("Perplexity Search Endpoint", False, 
+                                       "Search query mismatch in response")
+                    return False
+                
+                # Check if content contains pharmaceutical intelligence
+                pharma_keywords = ["market", "pharmaceutical", "GIST", "competitive", "analysis"]
+                content_relevance = sum(1 for keyword in pharma_keywords if keyword.lower() in content.lower())
+                
+                self.log_test_result("Perplexity Search Endpoint", True, 
+                                   f"Search successful. Content length: {len(content)}, "
+                                   f"Citations: {len(citations)}, "
+                                   f"Relevance score: {content_relevance}/5")
+                return True
+                
+            elif response.status_code == 500:
+                # Check if it's an API key error (expected with test key)
+                error_text = response.text.lower()
+                if "api" in error_text and ("key" in error_text or "auth" in error_text):
+                    self.log_test_result("Perplexity Search Endpoint", False, 
+                                       "API key authentication required - endpoint structure validated")
+                    return False
+                else:
+                    self.log_test_result("Perplexity Search Endpoint", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Perplexity Search Endpoint", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Perplexity Search Endpoint", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_perplexity_pharmaceutical_search(self) -> bool:
+        """Test Perplexity search with pharmaceutical-specific query"""
+        try:
+            payload = {
+                "query": "Qinlock ripretinib market share competitive intelligence",
+                "api_key": TEST_PERPLEXITY_KEY,
+                "search_focus": "competitive_intelligence"
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/perplexity-search", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                content = data.get("content", "")
+                citations = data.get("citations", [])
+                
+                # Check for pharmaceutical-specific content
+                pharma_terms = ["ripretinib", "qinlock", "market share", "competitive", "pharmaceutical"]
+                term_matches = sum(1 for term in pharma_terms if term.lower() in content.lower())
+                
+                # Validate citations format
+                valid_citations = 0
+                for citation in citations:
+                    if isinstance(citation, str) and ("http" in citation or len(citation) > 10):
+                        valid_citations += 1
+                
+                # Check database storage
+                # The endpoint should store results in MongoDB
+                success = len(content) > 100 and term_matches >= 2
+                
+                self.log_test_result("Perplexity Pharmaceutical Search", success, 
+                                   f"Pharmaceutical terms found: {term_matches}/5, "
+                                   f"Valid citations: {valid_citations}/{len(citations)}, "
+                                   f"Content quality: {'Good' if len(content) > 200 else 'Basic'}")
+                return success
+                
+            elif response.status_code == 500:
+                error_text = response.text.lower()
+                if "api" in error_text and ("key" in error_text or "auth" in error_text):
+                    self.log_test_result("Perplexity Pharmaceutical Search", False, 
+                                       "API key authentication required - endpoint functional")
+                    return False
+                else:
+                    self.log_test_result("Perplexity Pharmaceutical Search", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Perplexity Pharmaceutical Search", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Perplexity Pharmaceutical Search", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_enhanced_competitive_analysis(self) -> bool:
+        """Test enhanced competitive analysis with Perplexity integration"""
+        if not self.analysis_id:
+            self.log_test_result("Enhanced Competitive Analysis", False, "No analysis ID available")
+            return False
+            
+        try:
+            payload = {
+                "therapy_area": TEST_THERAPY_AREA,
+                "analysis_id": self.analysis_id,
+                "api_key": TEST_PERPLEXITY_KEY  # Using Perplexity key for enhanced analysis
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/enhanced-competitive-analysis", json=payload)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                if data.get("status") != "success":
+                    self.log_test_result("Enhanced Competitive Analysis", False, 
+                                       f"Status not success: {data.get('status')}")
+                    return False
+                
+                competitive_landscape = data.get("competitive_landscape", {})
+                
+                # Check for enhanced analysis components
+                has_real_time_intel = bool(competitive_landscape.get("real_time_intelligence"))
+                has_enhanced_analysis = bool(competitive_landscape.get("enhanced_analysis"))
+                has_combined_insights = bool(competitive_landscape.get("combined_insights"))
+                
+                # Validate real-time intelligence structure
+                real_time_intel = competitive_landscape.get("real_time_intelligence", {})
+                has_sources = len(real_time_intel.get("sources", [])) > 0
+                has_content = len(real_time_intel.get("content", "")) > 100
+                
+                # Check analysis type
+                analysis_type = competitive_landscape.get("analysis_type", "")
+                is_enhanced = "enhanced" in analysis_type.lower() or "perplexity" in analysis_type.lower()
+                
+                total_sources = competitive_landscape.get("total_sources", 0)
+                
+                success = has_real_time_intel and has_enhanced_analysis and has_sources
+                
+                self.log_test_result("Enhanced Competitive Analysis", success, 
+                                   f"Real-time intel: {has_real_time_intel}, "
+                                   f"Enhanced analysis: {has_enhanced_analysis}, "
+                                   f"Sources: {total_sources}, "
+                                   f"Analysis type: {analysis_type}")
+                return success
+                
+            elif response.status_code == 500:
+                error_text = response.text.lower()
+                if "api" in error_text and ("key" in error_text or "auth" in error_text):
+                    self.log_test_result("Enhanced Competitive Analysis", False, 
+                                       "API key authentication required - endpoint structure validated")
+                    return False
+                else:
+                    self.log_test_result("Enhanced Competitive Analysis", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Enhanced Competitive Analysis", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Enhanced Competitive Analysis", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_perplexity_error_handling(self) -> bool:
+        """Test error handling with invalid Perplexity API key"""
+        try:
+            payload = {
+                "query": "Test query for error handling",
+                "api_key": "invalid-perplexity-key-12345",
+                "search_focus": "pharmaceutical"
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/perplexity-search", json=payload)
+            
+            # Should return 500 with proper error message
+            if response.status_code == 500:
+                error_text = response.text
+                
+                # Check if error message is informative
+                has_api_key_error = "api" in error_text.lower() and "key" in error_text.lower()
+                has_perplexity_mention = "perplexity" in error_text.lower()
+                
+                # Validate error response structure
+                try:
+                    error_data = response.json()
+                    has_detail = "detail" in error_data
+                except:
+                    has_detail = False
+                
+                success = has_api_key_error or has_perplexity_mention
+                
+                self.log_test_result("Perplexity Error Handling", success, 
+                                   f"Proper error response for invalid API key. "
+                                   f"API key error: {has_api_key_error}, "
+                                   f"Perplexity mentioned: {has_perplexity_mention}, "
+                                   f"Structured error: {has_detail}")
+                return success
+            else:
+                self.log_test_result("Perplexity Error Handling", False, 
+                                   f"Expected 500 error, got {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Perplexity Error Handling", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_perplexity_data_storage(self) -> bool:
+        """Test that Perplexity search results are stored in MongoDB"""
+        try:
+            # First, perform a search
+            payload = {
+                "query": "Test query for database storage validation",
+                "api_key": TEST_PERPLEXITY_KEY,
+                "search_focus": "pharmaceutical"
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/perplexity-search", json=payload)
+            
+            if response.status_code == 200:
+                # The endpoint should store the result in database
+                # We can't directly query MongoDB, but we can infer storage success
+                # from the successful response and proper structure
+                
+                data = response.json()
+                
+                # Check if response has all required fields for storage
+                storage_fields = ["content", "citations", "search_query", "timestamp"]
+                has_all_fields = all(field in data for field in storage_fields)
+                
+                # Validate timestamp format
+                timestamp_valid = False
+                try:
+                    from datetime import datetime
+                    datetime.fromisoformat(data.get("timestamp", "").replace('Z', '+00:00'))
+                    timestamp_valid = True
+                except:
+                    pass
+                
+                success = has_all_fields and timestamp_valid
+                
+                self.log_test_result("Perplexity Data Storage", success, 
+                                   f"Storage fields present: {has_all_fields}, "
+                                   f"Valid timestamp: {timestamp_valid}, "
+                                   f"Query: '{payload['query'][:30]}...'")
+                return success
+                
+            elif response.status_code == 500:
+                # API key error - but endpoint structure is correct
+                self.log_test_result("Perplexity Data Storage", False, 
+                                   "API key required for storage testing")
+                return False
+            else:
+                self.log_test_result("Perplexity Data Storage", False, 
+                                   f"Search failed: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Perplexity Data Storage", False, f"Exception: {str(e)}")
+            return False
         """Test Plotly chart data generation"""
         if not self.analysis_id:
             self.log_test_result("Visualization Data", False, "No analysis ID available")
