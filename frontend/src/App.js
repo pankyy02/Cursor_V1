@@ -956,6 +956,115 @@ const App = () => {
     }
   };
 
+  // Phase 4: Excel Forecasting Model Handler Functions
+  const handleCreateForecastingModel = async () => {
+    if (!funnel) {
+      setError("Please create a patient funnel first");
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setError("Please login to create forecasting models");
+      setShowLoginModal(true);
+      return;
+    }
+
+    setLoadingState('forecasting_model', true);
+    setError("");
+
+    try {
+      const modelName = `${therapyArea} ${productName || 'Forecasting'} Model`;
+      
+      const response = await axios.post(`${API}/forecasting/create-model`, {
+        model_name: modelName,
+        therapy_area: therapyArea,
+        product_name: productName,
+        funnel_id: funnel.id,
+        max_lines: 5
+      });
+
+      setCurrentModel(response.data);
+      setShowParameterFetch(true); // Show parameter fetch UI
+      
+      // Load user's models
+      loadForecastingModels();
+
+    } catch (error) {
+      console.error("Forecasting model creation error:", error);
+      setError(error.response?.data?.detail || "Failed to create forecasting model. Please try again.");
+    } finally {
+      setLoadingState('forecasting_model', false);
+    }
+  };
+
+  const handleFetchParameters = async (parameters) => {
+    if (!perplexityKey.trim()) {
+      setError("Please enter Perplexity API key to fetch parameters");
+      return;
+    }
+
+    setLoadingState('parameter_fetch', true);
+    setError("");
+
+    try {
+      const response = await axios.post(`${API}/forecasting/fetch-parameters`, {
+        therapy_area: therapyArea,
+        product_name: productName,
+        parameters_needed: parameters,
+        target_year: "2024",
+        api_key: perplexityKey
+      });
+
+      setFetchedParameters(response.data.parameters);
+      setShowParameterFetch(false);
+
+    } catch (error) {
+      console.error("Parameter fetch error:", error);
+      setError(error.response?.data?.detail || "Failed to fetch parameters. Please try again.");
+    } finally {
+      setLoadingState('parameter_fetch', false);
+    }
+  };
+
+  const handleDownloadModel = async (modelId) => {
+    try {
+      const response = await axios.get(`${API}/forecasting/download/${modelId}`, {
+        responseType: 'blob'
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `forecasting_model_${modelId}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+    } catch (error) {
+      console.error("Model download error:", error);
+      setError("Failed to download model. Please try again.");
+    }
+  };
+
+  const loadForecastingModels = async () => {
+    try {
+      if (!isAuthenticated) return;
+      
+      const response = await axios.get(`${API}/forecasting/models`);
+      setForecastingModels(response.data.models || []);
+    } catch (error) {
+      console.error("Failed to load forecasting models:", error);
+    }
+  };
+
+  // Load forecasting models when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadForecastingModels();
+    }
+  }, [isAuthenticated]);
+
   const resetForm = () => {
     setTherapyArea("");
     setProductName("");
