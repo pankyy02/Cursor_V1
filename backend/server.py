@@ -6634,6 +6634,281 @@ async def get_executive_dashboard(current_user: User = Depends(get_current_user)
         logger.error(f"Executive dashboard error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get executive dashboard")
 
+# ========================================
+# Phase 4: Excel Forecasting Model API Endpoints
+# ========================================
+
+@api_router.post("/forecasting/create-model", response_model=ForecastingModel)
+async def create_forecasting_model(
+    model_name: str,
+    therapy_area: str,
+    funnel_id: str = None,
+    product_name: str = None,
+    max_lines: int = 5,
+    current_user: User = Depends(get_current_user)
+):
+    """Create new Excel-based forecasting model"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        # Create Excel template
+        excel_template = await create_pharma_forecasting_template(
+            model_name=model_name,
+            therapy_area=therapy_area,
+            max_lines=max_lines
+        )
+        
+        # Create forecasting model record
+        model = ForecastingModel(
+            user_id=current_user.id,
+            model_name=model_name,
+            therapy_area=therapy_area,
+            product_name=product_name,
+            funnel_id=funnel_id,
+            max_lines_of_therapy=max_lines,
+            latest_actuals_date="2024-12"
+        )
+        
+        # Store in database
+        await db.forecasting_models.insert_one(model.dict())
+        
+        # Store Excel template (in production, this would upload to SharePoint/OneDrive)
+        excel_id = f"excel_{model.id}"
+        await db.excel_templates.insert_one({
+            "id": excel_id,
+            "model_id": model.id,
+            "excel_data": base64.b64encode(excel_template["excel_data"]).decode(),
+            "sheets": excel_template["sheets"],
+            "created_at": datetime.utcnow()
+        })
+        
+        model.excel_file_id = excel_id
+        model.download_url = f"/api/forecasting/download/{model.id}"
+        
+        # Update model with Excel info
+        await db.forecasting_models.update_one(
+            {"id": model.id},
+            {"$set": {"excel_file_id": excel_id, "download_url": model.download_url}}
+        )
+        
+        return model
+        
+    except Exception as e:
+        logger.error(f"Forecasting model creation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create forecasting model: {str(e)}")
+
+@api_router.get("/forecasting/models")
+async def get_user_forecasting_models(current_user: User = Depends(get_current_user)):
+    """Get user's forecasting models"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        models = await db.forecasting_models.find(
+            {"user_id": current_user.id, "is_active": True}
+        ).sort("created_at", -1).to_list(50)
+        
+        return {"models": models, "count": len(models)}
+        
+    except Exception as e:
+        logger.error(f"Get forecasting models error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve models")
+
+@api_router.get("/forecasting/download/{model_id}")
+async def download_forecasting_model(model_id: str, current_user: User = Depends(get_current_user)):
+    """Download Excel forecasting model"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        # Get model
+        model = await db.forecasting_models.find_one({"id": model_id, "user_id": current_user.id})
+        if not model:
+            raise HTTPException(status_code=404, detail="Model not found")
+        
+        # Get Excel template
+        excel_template = await db.excel_templates.find_one({"model_id": model_id})
+        if not excel_template:
+            raise HTTPException(status_code=404, detail="Excel template not found")
+        
+        # Decode Excel data
+        excel_data = base64.b64decode(excel_template["excel_data"])
+        
+        from fastapi.responses import Response
+        
+        return Response(
+            content=excel_data,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename={model['model_name']}_forecasting_model.xlsx"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Download model error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to download model")
+
+@api_router.post("/forecasting/fetch-parameters")
+async def fetch_initial_parameters(request: PerplexityParameterRequest, current_user: User = Depends(get_current_user)):
+    """Fetch initial parameter values using Perplexity"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        # Fetch parameters using Perplexity
+        parameter_results = await fetch_parameters_with_perplexity(
+            therapy_area=request.therapy_area,
+            product_name=request.product_name,
+            parameters=request.parameters_needed,
+            target_year=request.target_year,
+            api_key=request.api_key
+        )
+        
+        return {
+            "status": "success",
+            "parameters": parameter_results["parameters"],
+            "fetch_time": parameter_results["fetch_time"],
+            "user_override_required": True,
+            "instructions": "Review the Perplexity values and override with your data if available"
+        }
+        
+    except Exception as e:
+        logger.error(f"Parameter fetch error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch parameters: {str(e)}")
+
+@api_router.post("/forecasting/upload-client-data/{model_id}")
+async def upload_client_data(
+    model_id: str,
+    file_data: dict,
+    data_type: str = "actuals",
+    current_user: User = Depends(get_current_user)
+):
+    """Upload client data (CSV/Excel/JSON) to model"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        # Verify model ownership
+        model = await db.forecasting_models.find_one({"id": model_id, "user_id": current_user.id})
+        if not model:
+            raise HTTPException(status_code=404, detail="Model not found")
+        
+        # Update Excel model with client data
+        success = await update_excel_with_client_data(model_id, file_data, data_type)
+        
+        if success:
+            return {
+                "status": "success",
+                "message": f"Client {data_type} data uploaded successfully",
+                "model_id": model_id,
+                "data_type": data_type,
+                "updated_at": datetime.utcnow()
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to upload client data")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Client data upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload client data: {str(e)}")
+
+@api_router.post("/forecasting/calibrate/{model_id}")
+async def calibrate_model(model_id: str, current_user: User = Depends(get_current_user)):
+    """Calibrate model with actual data"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        # Verify model ownership
+        model = await db.forecasting_models.find_one({"id": model_id, "user_id": current_user.id})
+        if not model:
+            raise HTTPException(status_code=404, detail="Model not found")
+        
+        # Run calibration
+        calibration_results = await calibrate_model_with_actuals(model_id)
+        
+        return {
+            "status": "success",
+            "calibration": calibration_results,
+            "message": "Model calibrated successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Model calibration error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to calibrate model: {str(e)}")
+
+@api_router.get("/forecasting/excel-online/{model_id}")
+async def get_excel_online_url(model_id: str, current_user: User = Depends(get_current_user)):
+    """Get Excel Online URL for collaborative editing"""
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        
+        # Verify model ownership
+        model = await db.forecasting_models.find_one({"id": model_id, "user_id": current_user.id})
+        if not model:
+            raise HTTPException(status_code=404, detail="Model not found")
+        
+        # In production, this would return actual Excel Online URL
+        # For now, return a simulated URL structure
+        excel_online_url = f"https://office.com/launch/excel?file={model_id}&embed=true"
+        
+        return {
+            "excel_online_url": excel_online_url,
+            "model_id": model_id,
+            "model_name": model["model_name"],
+            "collaborative": True,
+            "permissions": "edit"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Excel Online URL error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get Excel Online URL")
+
+@api_router.get("/forecasting/parameter-suggestions/{therapy_area}")
+async def get_parameter_suggestions(therapy_area: str):
+    """Get suggested parameters for therapy area"""
+    
+    # Common parameters by therapy area
+    therapy_parameters = {
+        "oncology": [
+            "incidence_rate", "prevalence_rate", "diagnosis_rate", "treatment_rate",
+            "progression_free_survival", "overall_survival", "response_rate",
+            "market_size", "wac_price", "patient_count", "line_share"
+        ],
+        "gist": [
+            "incidence_rate", "prevalence_rate", "mutation_status", "line_progression_rate",
+            "persistency_rate", "market_size", "wac_price", "patient_count"
+        ],
+        "default": [
+            "incidence_rate", "prevalence_rate", "diagnosis_rate", "treatment_rate",
+            "market_size", "wac_price", "patient_count", "market_share"
+        ]
+    }
+    
+    therapy_lower = therapy_area.lower()
+    if "gist" in therapy_lower:
+        params = therapy_parameters["gist"]
+    elif any(onc in therapy_lower for onc in ["cancer", "oncology", "tumor"]):
+        params = therapy_parameters["oncology"]
+    else:
+        params = therapy_parameters["default"]
+    
+    return {
+        "therapy_area": therapy_area,
+        "suggested_parameters": params,
+        "count": len(params),
+        "description": f"Common parameters for {therapy_area} forecasting models"
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
