@@ -35,7 +35,9 @@ const App = () => {
     login: false,
     register: false,
     payment: false,
-    workflows: false
+    workflows: false,
+    forecasting_model: false,
+    parameter_fetch: false
   });
   const [analysis, setAnalysis] = useState(null);
   const [funnel, setFunnel] = useState(null);
