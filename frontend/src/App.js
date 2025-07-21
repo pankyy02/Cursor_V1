@@ -1065,6 +1065,16 @@ const App = () => {
     }
   }, [isAuthenticated]);
 
+  // Initialize parameter selection
+  useEffect(() => {
+    setModelParameters({
+      selectedParams: [
+        "incidence_rate", "prevalence_rate", "diagnosis_rate", "treatment_rate",
+        "market_size", "wac_price", "patient_count", "progression_rate"
+      ]
+    });
+  }, []);
+
   const resetForm = () => {
     setTherapyArea("");
     setProductName("");
