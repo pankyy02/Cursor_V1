@@ -5874,7 +5874,448 @@ async def apple_token_auth(request: Request):
         logger.error(f"Apple token authentication error: {str(e)}")
         raise HTTPException(status_code=500, detail="Apple authentication failed")
 
-@api_router.get("/auth/profile")
+# ========================================
+# Phase 4: Excel Forecasting Model Functions
+# ========================================
+
+async def create_pharma_forecasting_template(model_name: str, therapy_area: str, max_lines: int = 5) -> Dict[str, Any]:
+    """Create Excel template for pharmaceutical forecasting model"""
+    try:
+        # Create workbook structure with openpyxl
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils.dataframe import dataframe_to_rows
+        import calendar
+        
+        wb = Workbook()
+        
+        # Remove default sheet
+        wb.remove(wb.active)
+        
+        # 1. Table of Contents (ToC) Sheet
+        toc_sheet = wb.create_sheet("ToC")
+        toc_sheet['A1'] = f"{model_name} - {therapy_area} Forecasting Model"
+        toc_sheet['A1'].font = Font(size=16, bold=True)
+        
+        toc_sheet['A3'] = "Sheet Navigation:"
+        toc_sheet['A3'].font = Font(bold=True)
+        
+        sheet_list = [
+            ("A4", "1. Assumptions", "Input all model assumptions"),
+            ("A5", "2. Model", "Core calculation engine"),
+            ("A6", "3. Actuals Data", "Client actual data"),
+            ("A7", "4. Prior Forecasts", "Previous predictions"),
+            ("A8", "5. Output Tables", "Model results"),
+            ("A9", "6. Graphs", "Visualizations"),
+            ("A10", "7. Persistency Curves", "Patient continuation rates")
+        ]
+        
+        for cell, name, desc in sheet_list:
+            toc_sheet[cell] = name
+            toc_sheet[cell].font = Font(bold=True)
+            toc_sheet[cell.replace('A', 'B')] = desc
+        
+        # 2. Assumptions Sheet
+        assumptions_sheet = wb.create_sheet("Assumptions")
+        assumptions_sheet['A1'] = "Model Assumptions"
+        assumptions_sheet['A1'].font = Font(size=14, bold=True)
+        
+        # Key model parameters
+        param_rows = [
+            ("A3", "CONTROL PARAMETERS", ""),
+            ("A4", "Latest Actuals Date", "2024-12"),
+            ("A5", "Max Lines of Therapy", max_lines),
+            ("A6", "Model Start Date", "2024-01"),
+            ("A7", "Model End Date", "2029-12"),
+            ("A8", "", ""),
+            ("A9", "MARKET PARAMETERS", ""),
+            ("A10", "Total Patient Pool", 100000),
+            ("A11", "Incidence/Prevalence Rate (%)", 0.1),
+            ("A12", "Diagnosis Rate (%)", 0.75),
+            ("A13", "Treatment Rate (%)", 0.60),
+            ("A14", "", ""),
+            ("A15", "PRODUCT PARAMETERS", ""),
+            ("A16", "Pills per Patient per Month", 60),
+            ("A17", "Pills per Bottle", 30),
+            ("A18", "Compliance Rate (%)", 85),
+            ("A19", "Days of Therapy", 28),
+            ("A20", "", ""),
+            ("A21", "COMMERCIAL PARAMETERS", ""),
+            ("A22", "Commercial/PAP Split (%)", 80),
+            ("A23", "Days on Hand", 45),
+            ("A24", "Return Rate (%)", 5),
+            ("A25", "WAC Price per Bottle ($)", 15000),
+            ("A26", "GTN Percentage (%)", 35),
+        ]
+        
+        for cell, param, value in param_rows:
+            assumptions_sheet[cell] = param
+            if param and not param.isupper():  # Not a header
+                assumptions_sheet[cell.replace('A', 'B')] = value
+            
+            if param.isupper():  # Header
+                assumptions_sheet[cell].font = Font(bold=True)
+                assumptions_sheet[cell].fill = PatternFill(start_color="E6F3FF", end_color="E6F3FF", fill_type="solid")
+        
+        # Line-specific shares
+        row = 28
+        for line in range(1, max_lines + 1):
+            assumptions_sheet[f'A{row}'] = f"Line {line} Product Shares"
+            assumptions_sheet[f'A{row}'].font = Font(bold=True)
+            row += 1
+            assumptions_sheet[f'A{row}'] = f"Our Product Line {line} Share (%)"
+            assumptions_sheet[f'B{row}'] = 30  # Default 30%
+            row += 1
+            assumptions_sheet[f'A{row}'] = f"Competitor 1 Line {line} Share (%)"
+            assumptions_sheet[f'B{row}'] = 40  # Default 40%
+            row += 1
+            assumptions_sheet[f'A{row}'] = f"Other Products Line {line} Share (%)"
+            assumptions_sheet[f'B{row}'] = 30  # Default 30%
+            row += 2
+        
+        # 3. Model Calculation Sheet
+        model_sheet = wb.create_sheet("Model")
+        model_sheet['A1'] = "Forecasting Model - Calculation Engine"
+        model_sheet['A1'].font = Font(size=14, bold=True)
+        
+        # Create monthly timeline (5 years)
+        start_col = 2  # Column B
+        months = []
+        for year in range(2024, 2030):
+            for month in range(1, 13):
+                month_str = f"{year}-{month:02d}"
+                months.append(month_str)
+                col_letter = chr(65 + start_col - 1)  # Convert to letter
+                model_sheet[f'{col_letter}2'] = month_str
+                start_col += 1
+        
+        # Model sections
+        sections = [
+            ("A4", "PATIENT CALCULATIONS"),
+            ("A5", "Total Patient Pool"),
+            ("A6", "Diagnosed Patients"),
+            ("A7", "Treated Patients"),
+            ("A8", ""),
+            ("A9", "LINE OF THERAPY ANALYSIS"),
+        ]
+        
+        for cell, label in sections:
+            model_sheet[cell] = label
+            if label and label.isupper():
+                model_sheet[cell].font = Font(bold=True)
+                model_sheet[cell].fill = PatternFill(start_color="FFE6E6", end_color="FFE6E6", fill_type="solid")
+        
+        # Add formulas for patient calculations
+        row = 10
+        for line in range(1, max_lines + 1):
+            model_sheet[f'A{row}'] = f"Line {line} New Start Patients"
+            model_sheet[f'A{row+1}'] = f"Line {line} Total Patients"
+            model_sheet[f'A{row+2}'] = f"Line {line} Discontinuations"
+            
+            # Add sample formulas (will be populated with real logic)
+            for col in range(2, min(62, 2 + len(months))):  # Limit columns
+                col_letter = chr(65 + col - 1)
+                if line == 1:
+                    # Line 1 new starts = Treated patients * our share
+                    model_sheet[f'{col_letter}{row}'] = f"=$B$7*Assumptions.$B${30+(line-1)*4}"
+                else:
+                    # Subsequent lines from previous line discontinuations
+                    prev_row = row - 3
+                    model_sheet[f'{col_letter}{row}'] = f"=${col_letter}{prev_row}*Assumptions.$B${35+(line-2)*4}"
+                
+                # Total patients using persistency
+                model_sheet[f'{col_letter}{row+1}'] = f"=${col_letter}{row}+{chr(65+col-2)}{row+1}*0.8"  # 80% persistence
+                
+                # Discontinuations
+                model_sheet[f'{col_letter}{row+2}'] = f"=${col_letter}{row+1}*0.2"  # 20% discontinuation
+            
+            row += 4
+        
+        # 4. Actuals Data Sheet
+        actuals_sheet = wb.create_sheet("Actuals Data")
+        actuals_sheet['A1'] = "Actuals Data - Client Provided"
+        actuals_sheet['A1'].font = Font(size=14, bold=True)
+        
+        actuals_params = [
+            "Total Patients",
+            "New Start Patients", 
+            "Ex-factory Units",
+            "Demand Units",
+            "Gross Revenue ($)",
+            "Net Revenue ($)",
+            "Inventory Units",
+            "Days on Hand",
+            "Return Units"
+        ]
+        
+        # Headers
+        actuals_sheet['A3'] = "Parameter"
+        for i, month in enumerate(months[-12:], 2):  # Last 12 months
+            col_letter = chr(65 + i - 1)
+            actuals_sheet[f'{col_letter}3'] = month
+        
+        # Parameters
+        for i, param in enumerate(actuals_params, 4):
+            actuals_sheet[f'A{i}'] = param
+        
+        # 5. Prior Forecasts Sheet
+        prior_sheet = wb.create_sheet("Prior Forecasts")
+        prior_sheet['A1'] = "Prior Forecasts - Historical Predictions"
+        prior_sheet['A1'].font = Font(size=14, bold=True)
+        
+        # Same structure as actuals
+        prior_sheet['A3'] = "Parameter"
+        for i, month in enumerate(months, 2):
+            if i > 50: break  # Limit columns
+            col_letter = chr(65 + i - 1)
+            prior_sheet[f'{col_letter}3'] = month
+        
+        for i, param in enumerate(actuals_params, 4):
+            prior_sheet[f'A{i}'] = param
+        
+        # 6. Output Tables Sheet  
+        output_sheet = wb.create_sheet("Output Tables")
+        output_sheet['A1'] = "Output Tables - Model Results"
+        output_sheet['A1'].font = Font(size=14, bold=True)
+        
+        # Link to model calculations
+        output_sheet['A3'] = "Parameter"
+        for i, month in enumerate(months, 2):
+            if i > 50: break
+            col_letter = chr(65 + i - 1)
+            output_sheet[f'{col_letter}3'] = month
+        
+        output_params = [
+            ("Total New Start Patients", "SUM(Model.B10:B50)"),
+            ("Total Patients", "SUM(Model.B11:B51)"),
+            ("Total Demand Units", "B4*Assumptions.$B$16/Assumptions.$B$17"),
+            ("Commercial Units", "B6*Assumptions.$B$22/100"),
+            ("PAP Units", "B6*(100-Assumptions.$B$22)/100"),
+            ("Ex-factory Units", "B6+(B6*Assumptions.$B$23/30)+B6*Assumptions.$B$24/100"),
+            ("Gross Revenue ($)", "B8*Assumptions.$B$25"),
+            ("Net Revenue ($)", "B9*(100-Assumptions.$B$26)/100")
+        ]
+        
+        for i, (param, formula) in enumerate(output_params, 4):
+            output_sheet[f'A{i}'] = param
+            # Add formula for first column as example
+            output_sheet[f'B{i}'] = formula
+        
+        # 7. Graphs Sheet
+        graphs_sheet = wb.create_sheet("Graphs")
+        graphs_sheet['A1'] = "Charts and Visualizations"
+        graphs_sheet['A1'].font = Font(size=14, bold=True)
+        graphs_sheet['A3'] = "Charts will be created based on Output Tables data"
+        
+        # 8. Persistency Curves Sheet
+        persistency_sheet = wb.create_sheet("Persistency Curves")
+        persistency_sheet['A1'] = "Persistency Curves by Line of Therapy"
+        persistency_sheet['A1'].font = Font(size=14, bold=True)
+        
+        # Create persistency curve data
+        persistency_sheet['A3'] = "Month"
+        for line in range(1, max_lines + 1):
+            col_letter = chr(65 + line)
+            persistency_sheet[f'{col_letter}3'] = f"Line {line} Persistency"
+        
+        # Sample persistency data (monthly retention rates)
+        for month in range(1, 25):  # 24 months
+            persistency_sheet[f'A{3+month}'] = month
+            for line in range(1, max_lines + 1):
+                col_letter = chr(65 + line)
+                # Declining persistency curve
+                retention = max(0.3, 0.9 * (0.95 ** month))  # Starts at 90%, declines 5% per month, floors at 30%
+                persistency_sheet[f'{col_letter}{3+month}'] = retention
+        
+        # Save to bytes
+        excel_buffer = io.BytesIO()
+        wb.save(excel_buffer)
+        excel_buffer.seek(0)
+        
+        return {
+            "excel_data": excel_buffer.getvalue(),
+            "sheets": ["ToC", "Assumptions", "Model", "Actuals Data", "Prior Forecasts", "Output Tables", "Graphs", "Persistency Curves"],
+            "parameters": len(actuals_params),
+            "timeline_months": len(months)
+        }
+        
+    except Exception as e:
+        logger.error(f"Excel template creation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Excel template creation failed: {str(e)}")
+
+async def fetch_parameters_with_perplexity(therapy_area: str, product_name: str, parameters: List[str], target_year: str, api_key: str) -> Dict[str, Any]:
+    """Fetch initial parameter values using Perplexity"""
+    try:
+        parameter_results = {}
+        
+        for param in parameters:
+            # Create specific query for each parameter
+            query = f"{therapy_area} {product_name if product_name else ''} {param} {target_year} pharmaceutical market data statistics"
+            
+            # Use existing Perplexity function
+            perplexity_result = await search_with_perplexity(query, api_key, f"parameter_{param}")
+            
+            # Extract numerical value from Perplexity response
+            extracted_value = extract_parameter_value(perplexity_result.content, param)
+            
+            parameter_results[param] = {
+                "value": extracted_value,
+                "source": "perplexity",
+                "query": query,
+                "full_response": perplexity_result.content[:500],  # First 500 chars
+                "confidence": perplexity_result.confidence_score if hasattr(perplexity_result, 'confidence_score') else 0.7
+            }
+        
+        return {
+            "parameters": parameter_results,
+            "fetch_time": datetime.utcnow(),
+            "therapy_area": therapy_area,
+            "product_name": product_name,
+            "target_year": target_year
+        }
+        
+    except Exception as e:
+        logger.error(f"Perplexity parameter fetch error: {str(e)}")
+        return {
+            "parameters": {param: {"value": None, "error": str(e)} for param in parameters},
+            "error": str(e)
+        }
+
+def extract_parameter_value(text: str, parameter: str) -> Optional[float]:
+    """Extract numerical value for parameter from text"""
+    import re
+    
+    # Common patterns for different parameter types
+    patterns = {
+        "incidence_rate": r"incidence.*?(\d+(?:\.\d+)?)\s*(?:per|/|\%)",
+        "prevalence_rate": r"prevalence.*?(\d+(?:\.\d+)?)\s*(?:per|/|\%)",
+        "market_size": r"market.*?(?:\$|USD|dollars?)\s*(\d+(?:\.\d+)?)\s*(?:billion|million|B|M)",
+        "pricing": r"price.*?(?:\$|USD|dollars?)\s*(\d+(?:,\d{3})*(?:\.\d+)?)",
+        "wac_price": r"(?:wac|wholesale|price).*?(?:\$|USD|dollars?)\s*(\d+(?:,\d{3})*(?:\.\d+)?)",
+        "patient_count": r"patients?.*?(\d+(?:,\d{3})*(?:\.\d+)?)",
+        "share": r"(?:market\s+)?share.*?(\d+(?:\.\d+)?)\s*\%",
+        "progression_rate": r"progress.*?(\d+(?:\.\d+)?)\s*\%"
+    }
+    
+    # Try to find pattern match
+    for pattern_name, pattern in patterns.items():
+        if pattern_name.lower() in parameter.lower():
+            matches = re.findall(pattern, text.lower())
+            if matches:
+                try:
+                    # Clean and convert to float
+                    value_str = matches[0].replace(',', '')
+                    return float(value_str)
+                except:
+                    continue
+    
+    # Fallback: look for any number near the parameter name
+    param_lower = parameter.lower().replace('_', ' ')
+    
+    # Find parameter mention and look for nearby numbers
+    param_pattern = rf"{param_lower}.*?(\d+(?:\.\d+)?)"
+    matches = re.findall(param_pattern, text.lower())
+    if matches:
+        try:
+            return float(matches[0])
+        except:
+            pass
+    
+    # Return None if no value found
+    return None
+
+async def update_excel_with_client_data(model_id: str, client_data: Dict[str, Any], data_type: str = "actuals") -> bool:
+    """Update Excel model with client provided data"""
+    try:
+        # This would integrate with Microsoft Graph API to update the Excel file
+        # For now, we'll store the data in MongoDB and use it for calibration
+        
+        update_doc = {
+            "model_id": model_id,
+            "data_type": data_type,
+            "data": client_data,
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Update or insert client data
+        await db.model_client_data.update_one(
+            {"model_id": model_id, "data_type": data_type},
+            {"$set": update_doc},
+            upsert=True
+        )
+        
+        # Update model's last_calculated timestamp
+        await db.forecasting_models.update_one(
+            {"id": model_id},
+            {"$set": {"updated_at": datetime.utcnow()}}
+        )
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Client data update error: {str(e)}")
+        return False
+
+async def calibrate_model_with_actuals(model_id: str) -> Dict[str, Any]:
+    """Calibrate model predictions against actual data"""
+    try:
+        # Get model
+        model = await db.forecasting_models.find_one({"id": model_id})
+        if not model:
+            raise HTTPException(status_code=404, detail="Model not found")
+        
+        # Get actuals data
+        actuals = await db.model_client_data.find_one({"model_id": model_id, "data_type": "actuals"})
+        if not actuals:
+            return {"message": "No actuals data available for calibration"}
+        
+        # Get latest actuals date from model
+        latest_actuals_date = model.get("latest_actuals_date", "2024-12")
+        
+        calibration_results = {
+            "model_id": model_id,
+            "calibration_date": datetime.utcnow(),
+            "latest_actuals_date": latest_actuals_date,
+            "variances": {},
+            "calibration_factors": {},
+            "recommendations": []
+        }
+        
+        # Compare actuals vs model for key parameters
+        key_parameters = [
+            "total_patients", "new_start_patients", "ex_factory_units", 
+            "demand_units", "gross_revenue", "net_revenue"
+        ]
+        
+        actuals_data = actuals.get("data", {})
+        
+        for param in key_parameters:
+            if param in actuals_data:
+                actual_value = actuals_data[param]
+                # Placeholder for model prediction (would come from Excel calculation)
+                predicted_value = actual_value * 1.1  # Simulate 10% over-prediction
+                
+                variance = ((predicted_value - actual_value) / actual_value) * 100 if actual_value != 0 else 0
+                calibration_factor = actual_value / predicted_value if predicted_value != 0 else 1
+                
+                calibration_results["variances"][param] = variance
+                calibration_results["calibration_factors"][param] = calibration_factor
+                
+                if abs(variance) > 10:  # More than 10% variance
+                    calibration_results["recommendations"].append(
+                        f"High variance detected for {param}: {variance:.1f}%. Consider updating assumptions."
+                    )
+        
+        # Store calibration results
+        await db.model_calibrations.insert_one(calibration_results)
+        
+        return calibration_results
+        
+    except Exception as e:
+        logger.error(f"Model calibration error: {str(e)}")
+        return {"error": str(e)}
+
+# API Endpoints for Excel Forecasting
 async def get_user_profile(current_user: User = Depends(get_current_user)):
     """Get current user profile"""
     try:
