@@ -3961,6 +3961,136 @@ const App = () => {
           </div>
         </div>
       )}
+
+      {/* Parameter Fetch Modal */}
+      {showParameterFetch && currentModel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">🔍 Fetch Initial Parameters</h3>
+            <p className="text-gray-600 mb-4">
+              Let Perplexity fetch initial values for key parameters. You can override any values with your own data.
+            </p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Parameters to Fetch:</label>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {[
+                  "incidence_rate", "prevalence_rate", "diagnosis_rate", "treatment_rate",
+                  "market_size", "wac_price", "patient_count", "progression_rate",
+                  "persistency_rate", "line_share"
+                ].map((param) => (
+                  <label key={param} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      defaultChecked={true}
+                      className="rounded border-gray-300"
+                      onChange={(e) => {
+                        const currentParams = modelParameters.selectedParams || [];
+                        if (e.target.checked) {
+                          setModelParameters({
+                            ...modelParameters,
+                            selectedParams: [...currentParams, param]
+                          });
+                        } else {
+                          setModelParameters({
+                            ...modelParameters,
+                            selectedParams: currentParams.filter(p => p !== param)
+                          });
+                        }
+                      }}
+                    />
+                    <span className="text-sm">{param.replace('_', ' ')}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowParameterFetch(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Skip
+              </button>
+              <button
+                onClick={() => handleFetchParameters(modelParameters.selectedParams || [])}
+                disabled={loadingStates.parameter_fetch}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:bg-gray-300"
+              >
+                {loadingStates.parameter_fetch ? 'Fetching...' : 'Fetch Parameters'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forecasting Models List Modal */}
+      {showForecastingModels && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">📊 Your Forecasting Models</h3>
+            
+            {forecastingModels.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No forecasting models created yet.</p>
+                <button
+                  onClick={() => setShowForecastingModels(false)}
+                  className="mt-4 px-4 py-2 text-blue-600 hover:text-blue-800"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  {forecastingModels.map((model) => (
+                    <div key={model.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{model.model_name}</h4>
+                          <p className="text-sm text-gray-600">{model.therapy_area}</p>
+                          {model.product_name && (
+                            <p className="text-sm text-blue-600">{model.product_name}</p>
+                          )}
+                          <p className="text-xs text-gray-500">
+                            Created: {new Date(model.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleDownloadModel(model.id)}
+                            className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 text-white rounded"
+                          >
+                            📥 Download Excel
+                          </button>
+                          <button
+                            onClick={() => {
+                              // Open Excel Online (placeholder)
+                              window.open(`https://office.com/launch/excel?file=${model.id}`, '_blank');
+                            }}
+                            className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded"
+                          >
+                            🌐 Open Online
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex justify-end mt-6">
+                  <button
+                    onClick={() => setShowForecastingModels(false)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
     </GoogleOAuthProvider>
   );
