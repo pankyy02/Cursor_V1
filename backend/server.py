@@ -41,6 +41,12 @@ from authlib.integrations.starlette_client import OAuth
 from authlib.jose import jwt
 import httpx
 
+# Phase 4: Microsoft Graph Integration
+from msgraph import GraphServiceClient
+from azure.identity import ClientSecretCredential
+import io
+import base64
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
