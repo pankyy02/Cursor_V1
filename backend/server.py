@@ -478,6 +478,81 @@ class UserProfile(BaseModel):
     recent_analyses: List[str] = Field(default_factory=list)
     favorite_analyses: List[str] = Field(default_factory=list)
 
+# Phase 4: Excel Forecasting Models
+class ForecastingModel(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    model_name: str
+    therapy_area: str
+    product_name: Optional[str] = None
+    funnel_id: Optional[str] = None
+    model_type: str = "line_of_therapy"  # "line_of_therapy", "basic", "custom"
+    
+    # Model configuration
+    max_lines_of_therapy: int = 5
+    latest_actuals_date: str  # "2024-12" format
+    model_parameters: Dict[str, Any] = Field(default_factory=dict)
+    assumptions: Dict[str, Any] = Field(default_factory=dict)
+    actuals_data: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Excel file info
+    excel_file_id: Optional[str] = None
+    sharepoint_url: Optional[str] = None
+    download_url: Optional[str] = None
+    
+    # Model status
+    is_active: bool = True
+    last_calculated: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class ModelAssumptions(BaseModel):
+    # Market parameters
+    total_patient_pool: float
+    incidence_prevalence_rate: float
+    diagnosis_rate: float
+    treatment_rate: float
+    
+    # Product shares by line (dynamic based on max_lines)
+    line_shares: Dict[str, Dict[str, float]] = Field(default_factory=dict)  # {"line_1": {"product_a": 0.3, "product_b": 0.2}}
+    
+    # Market access and uptake
+    market_access_timeline: Dict[str, float] = Field(default_factory=dict)  # {"2024-01": 0.1, "2024-06": 0.5}
+    uptake_curve_params: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Patient flow parameters
+    progression_rates: Dict[str, float] = Field(default_factory=dict)  # {"line_1_to_2": 0.4}
+    persistency_curves: Dict[str, Dict[str, float]] = Field(default_factory=dict)
+    
+    # Unit conversion
+    pills_per_patient_per_month: float
+    pills_per_bottle: float
+    compliance_rate: float = 0.85
+    days_of_therapy: float = 28
+    
+    # Commercial parameters
+    commercial_pap_split: float = 0.8  # 80% commercial, 20% PAP
+    days_on_hand: float = 45
+    return_rate: float = 0.05  # 5% returns
+    
+    # Pricing
+    wac_price_per_bottle: float
+    gtn_percentage: float = 0.35  # 35% discount from gross to net
+
+class ClientDataUpload(BaseModel):
+    model_id: str
+    data_type: str  # "actuals", "assumptions", "custom"
+    file_format: str  # "csv", "excel", "json"
+    data: Dict[str, Any]
+    upload_date: datetime = Field(default_factory=datetime.utcnow)
+
+class PerplexityParameterRequest(BaseModel):
+    therapy_area: str
+    product_name: Optional[str] = None
+    parameters_needed: List[str]  # ["incidence_rate", "market_size", "pricing", etc.]
+    target_year: str = "2024"
+    api_key: str
+
 # Phase 4: Configuration and Security
 # Subscription Plans Configuration
 SUBSCRIPTION_PLANS = {
