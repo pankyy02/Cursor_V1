@@ -40,3 +40,8 @@ pdfplumber
 numpy
 scipy
 pandas
+msgraph-core
+msgraph-sdk
+azure-identity
+authlib
+starlette
