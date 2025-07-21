@@ -74,6 +74,14 @@ const App = () => {
   const [userWorkflows, setUserWorkflows] = useState([]);
   const [executiveDashboard, setExecutiveDashboard] = useState(null);
 
+  // Phase 4: Excel Forecasting Models state variables
+  const [forecastingModels, setForecastingModels] = useState([]);
+  const [showForecastingModels, setShowForecastingModels] = useState(false);
+  const [currentModel, setCurrentModel] = useState(null);
+  const [modelParameters, setModelParameters] = useState({});
+  const [showParameterFetch, setShowParameterFetch] = useState(false);
+  const [fetchedParameters, setFetchedParameters] = useState({});
+
   const setLoadingState = (operation, isLoading) => {
     setLoadingStates(prev => ({
       ...prev,
