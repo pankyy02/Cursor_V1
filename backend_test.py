@@ -2513,6 +2513,565 @@ class PharmaAPITester:
             self.log_test_result("Company Intelligence - Timeout Handling", False, f"Exception: {str(e)}")
             return False
     
+    # ========================================
+    # EXCEL FORECASTING MODEL TESTS (NEW)
+    # ========================================
+    
+    async def test_forecasting_create_model(self) -> bool:
+        """Test Excel forecasting model creation endpoint"""
+        if not hasattr(self, 'test_session_token'):
+            self.log_test_result("Forecasting Model Creation", False, "No session token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.test_session_token}"}
+            
+            # Test model creation
+            payload = {
+                "model_name": "GIST Forecasting Model",
+                "therapy_area": TEST_THERAPY_AREA,
+                "product_name": TEST_PRODUCT_NAME,
+                "max_lines": 5
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/forecasting/create-model", 
+                                            params=payload, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["id", "user_id", "model_name", "therapy_area", "product_name", 
+                                 "max_lines_of_therapy", "latest_actuals_date", "excel_file_id", "download_url"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("Forecasting Model Creation", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                # Validate model data
+                if data.get("model_name") != payload["model_name"]:
+                    self.log_test_result("Forecasting Model Creation", False, 
+                                       f"Model name mismatch: {data.get('model_name')}")
+                    return False
+                
+                if data.get("therapy_area") != payload["therapy_area"]:
+                    self.log_test_result("Forecasting Model Creation", False, 
+                                       f"Therapy area mismatch: {data.get('therapy_area')}")
+                    return False
+                
+                if data.get("max_lines_of_therapy") != payload["max_lines"]:
+                    self.log_test_result("Forecasting Model Creation", False, 
+                                       f"Max lines mismatch: {data.get('max_lines_of_therapy')}")
+                    return False
+                
+                # Validate Excel file creation
+                excel_file_id = data.get("excel_file_id")
+                download_url = data.get("download_url")
+                
+                if not excel_file_id or not excel_file_id.startswith("excel_"):
+                    self.log_test_result("Forecasting Model Creation", False, 
+                                       f"Invalid Excel file ID: {excel_file_id}")
+                    return False
+                
+                if not download_url or "/api/forecasting/download/" not in download_url:
+                    self.log_test_result("Forecasting Model Creation", False, 
+                                       f"Invalid download URL: {download_url}")
+                    return False
+                
+                # Store model ID for subsequent tests
+                self.test_forecasting_model_id = data.get("id")
+                
+                self.log_test_result("Forecasting Model Creation", True, 
+                                   f"Model created successfully. "
+                                   f"ID: {self.test_forecasting_model_id[:8]}..., "
+                                   f"Name: {data.get('model_name')}, "
+                                   f"Therapy: {data.get('therapy_area')}, "
+                                   f"Max lines: {data.get('max_lines_of_therapy')}, "
+                                   f"Excel ID: {excel_file_id[:12]}...")
+                return True
+                
+            elif response.status_code == 401:
+                self.log_test_result("Forecasting Model Creation", False, 
+                                   "Authentication required for model creation")
+                return False
+            else:
+                self.log_test_result("Forecasting Model Creation", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Forecasting Model Creation", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_forecasting_get_models(self) -> bool:
+        """Test retrieving user's forecasting models"""
+        if not hasattr(self, 'test_session_token'):
+            self.log_test_result("Forecasting Models Retrieval", False, "No session token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.test_session_token}"}
+            response = await self.client.get(f"{API_BASE_URL}/forecasting/models", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                if "models" not in data or "count" not in data:
+                    self.log_test_result("Forecasting Models Retrieval", False, 
+                                       "Missing 'models' or 'count' in response")
+                    return False
+                
+                models = data.get("models", [])
+                count = data.get("count", 0)
+                
+                if not isinstance(models, list):
+                    self.log_test_result("Forecasting Models Retrieval", False, 
+                                       f"Models should be list, got: {type(models)}")
+                    return False
+                
+                if count != len(models):
+                    self.log_test_result("Forecasting Models Retrieval", False, 
+                                       f"Count mismatch: reported {count}, actual {len(models)}")
+                    return False
+                
+                # Validate model structure if models exist
+                valid_models = 0
+                if models:
+                    for model in models:
+                        required_model_fields = ["id", "model_name", "therapy_area", "created_at", "is_active"]
+                        if all(field in model for field in required_model_fields):
+                            valid_models += 1
+                
+                # Check if our test model is in the list
+                test_model_found = False
+                if hasattr(self, 'test_forecasting_model_id'):
+                    test_model_found = any(m.get("id") == self.test_forecasting_model_id for m in models)
+                
+                self.log_test_result("Forecasting Models Retrieval", True, 
+                                   f"Retrieved {count} models, "
+                                   f"Valid structure: {valid_models}/{len(models)}, "
+                                   f"Test model found: {test_model_found}")
+                return True
+                
+            elif response.status_code == 401:
+                self.log_test_result("Forecasting Models Retrieval", False, 
+                                   "Authentication required for model retrieval")
+                return False
+            else:
+                self.log_test_result("Forecasting Models Retrieval", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Forecasting Models Retrieval", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_forecasting_download_model(self) -> bool:
+        """Test Excel forecasting model download"""
+        if not hasattr(self, 'test_session_token'):
+            self.log_test_result("Forecasting Model Download", False, "No session token available")
+            return False
+        
+        if not hasattr(self, 'test_forecasting_model_id'):
+            self.log_test_result("Forecasting Model Download", False, "No forecasting model ID available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.test_session_token}"}
+            response = await self.client.get(f"{API_BASE_URL}/forecasting/download/{self.test_forecasting_model_id}", 
+                                           headers=headers)
+            
+            if response.status_code == 200:
+                # Validate Excel file response
+                content_type = response.headers.get("content-type", "")
+                if "spreadsheetml" not in content_type and "excel" not in content_type:
+                    self.log_test_result("Forecasting Model Download", False, 
+                                       f"Invalid content type: {content_type}")
+                    return False
+                
+                # Validate Content-Disposition header
+                content_disposition = response.headers.get("content-disposition", "")
+                if "attachment" not in content_disposition or ".xlsx" not in content_disposition:
+                    self.log_test_result("Forecasting Model Download", False, 
+                                       f"Invalid content disposition: {content_disposition}")
+                    return False
+                
+                # Validate file size (should be reasonable for Excel file)
+                content_length = len(response.content)
+                if content_length < 1000:  # Too small for Excel file
+                    self.log_test_result("Forecasting Model Download", False, 
+                                       f"File too small: {content_length} bytes")
+                    return False
+                
+                if content_length > 10 * 1024 * 1024:  # Too large (>10MB)
+                    self.log_test_result("Forecasting Model Download", False, 
+                                       f"File too large: {content_length} bytes")
+                    return False
+                
+                # Try to validate Excel file structure (basic check)
+                excel_valid = False
+                try:
+                    # Check for Excel file signature
+                    if response.content[:4] == b'PK\x03\x04':  # ZIP signature (Excel is ZIP-based)
+                        excel_valid = True
+                except:
+                    pass
+                
+                self.log_test_result("Forecasting Model Download", True, 
+                                   f"Excel file downloaded successfully. "
+                                   f"Size: {content_length:,} bytes, "
+                                   f"Content-Type: {content_type}, "
+                                   f"Valid Excel format: {excel_valid}")
+                return True
+                
+            elif response.status_code == 401:
+                self.log_test_result("Forecasting Model Download", False, 
+                                   "Authentication required for model download")
+                return False
+            elif response.status_code == 404:
+                self.log_test_result("Forecasting Model Download", False, 
+                                   "Model or Excel template not found")
+                return False
+            else:
+                self.log_test_result("Forecasting Model Download", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Forecasting Model Download", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_forecasting_fetch_parameters(self) -> bool:
+        """Test Perplexity parameter fetching for forecasting models"""
+        if not hasattr(self, 'test_session_token'):
+            self.log_test_result("Forecasting Parameter Fetching", False, "No session token available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.test_session_token}"}
+            
+            payload = {
+                "therapy_area": TEST_THERAPY_AREA,
+                "product_name": TEST_PRODUCT_NAME,
+                "parameters_needed": ["incidence_rate", "market_size", "wac_price", "patient_count"],
+                "target_year": "2024",
+                "api_key": TEST_PERPLEXITY_KEY
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/forecasting/fetch-parameters", 
+                                            json=payload, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["status", "parameters", "fetch_time", "user_override_required", "instructions"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("Forecasting Parameter Fetching", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                if data.get("status") != "success":
+                    self.log_test_result("Forecasting Parameter Fetching", False, 
+                                       f"Status not success: {data.get('status')}")
+                    return False
+                
+                # Validate parameters structure
+                parameters = data.get("parameters", {})
+                if not isinstance(parameters, dict):
+                    self.log_test_result("Forecasting Parameter Fetching", False, 
+                                       f"Parameters should be dict, got: {type(parameters)}")
+                    return False
+                
+                # Check if requested parameters are present
+                requested_params = payload["parameters_needed"]
+                found_params = 0
+                valid_param_structure = 0
+                
+                for param in requested_params:
+                    if param in parameters:
+                        found_params += 1
+                        param_data = parameters[param]
+                        
+                        # Validate parameter data structure
+                        if isinstance(param_data, dict) and "value" in param_data and "source" in param_data:
+                            valid_param_structure += 1
+                
+                # Validate fetch_time
+                fetch_time_valid = False
+                try:
+                    from datetime import datetime
+                    fetch_time = data.get("fetch_time", "")
+                    if fetch_time:
+                        datetime.fromisoformat(fetch_time.replace('Z', '+00:00'))
+                        fetch_time_valid = True
+                except:
+                    pass
+                
+                success = (found_params >= len(requested_params) // 2 and  # At least half found
+                          valid_param_structure >= found_params // 2 and   # At least half have valid structure
+                          fetch_time_valid)
+                
+                self.log_test_result("Forecasting Parameter Fetching", success, 
+                                   f"Parameters fetched: {found_params}/{len(requested_params)}, "
+                                   f"Valid structure: {valid_param_structure}, "
+                                   f"Fetch time valid: {fetch_time_valid}, "
+                                   f"Override required: {data.get('user_override_required')}")
+                return success
+                
+            elif response.status_code == 401:
+                self.log_test_result("Forecasting Parameter Fetching", False, 
+                                   "Authentication required for parameter fetching")
+                return False
+            elif response.status_code == 500:
+                # Check if it's Perplexity API key error
+                error_text = response.text.lower()
+                if "api" in error_text and ("key" in error_text or "perplexity" in error_text):
+                    self.log_test_result("Forecasting Parameter Fetching", False, 
+                                       "Perplexity API key required for parameter fetching")
+                    return False
+                else:
+                    self.log_test_result("Forecasting Parameter Fetching", False, 
+                                       f"Server error: {response.text}")
+                    return False
+            else:
+                self.log_test_result("Forecasting Parameter Fetching", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Forecasting Parameter Fetching", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_forecasting_parameter_suggestions(self) -> bool:
+        """Test therapy area parameter suggestions endpoint"""
+        try:
+            # Test GIST therapy area
+            response = await self.client.get(f"{API_BASE_URL}/forecasting/parameter-suggestions/GIST")
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                if "parameters" not in data or "therapy_area" not in data:
+                    self.log_test_result("Forecasting Parameter Suggestions", False, 
+                                       "Missing 'parameters' or 'therapy_area' in response")
+                    return False
+                
+                parameters = data.get("parameters", [])
+                therapy_area = data.get("therapy_area", "")
+                
+                if not isinstance(parameters, list):
+                    self.log_test_result("Forecasting Parameter Suggestions", False, 
+                                       f"Parameters should be list, got: {type(parameters)}")
+                    return False
+                
+                if len(parameters) < 5:
+                    self.log_test_result("Forecasting Parameter Suggestions", False, 
+                                       f"Expected at least 5 parameters, got: {len(parameters)}")
+                    return False
+                
+                # Check for GIST-specific parameters
+                gist_specific_params = ["incidence_rate", "prevalence_rate", "mutation_status", 
+                                      "line_progression_rate", "persistency_rate"]
+                found_gist_params = sum(1 for param in gist_specific_params if param in parameters)
+                
+                # Check for general pharmaceutical parameters
+                general_params = ["market_size", "wac_price", "patient_count"]
+                found_general_params = sum(1 for param in general_params if param in parameters)
+                
+                # Test oncology therapy area
+                oncology_response = await self.client.get(f"{API_BASE_URL}/forecasting/parameter-suggestions/oncology")
+                oncology_success = oncology_response.status_code == 200
+                
+                oncology_params = []
+                if oncology_success:
+                    oncology_data = oncology_response.json()
+                    oncology_params = oncology_data.get("parameters", [])
+                
+                success = (found_gist_params >= 3 and found_general_params >= 2 and oncology_success)
+                
+                self.log_test_result("Forecasting Parameter Suggestions", success, 
+                                   f"GIST parameters: {len(parameters)} total, "
+                                   f"GIST-specific: {found_gist_params}/{len(gist_specific_params)}, "
+                                   f"General: {found_general_params}/{len(general_params)}, "
+                                   f"Oncology endpoint: {oncology_success} ({len(oncology_params)} params)")
+                return success
+                
+            else:
+                self.log_test_result("Forecasting Parameter Suggestions", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Forecasting Parameter Suggestions", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_forecasting_client_data_upload(self) -> bool:
+        """Test client data upload functionality"""
+        if not hasattr(self, 'test_session_token'):
+            self.log_test_result("Forecasting Client Data Upload", False, "No session token available")
+            return False
+        
+        if not hasattr(self, 'test_forecasting_model_id'):
+            self.log_test_result("Forecasting Client Data Upload", False, "No forecasting model ID available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.test_session_token}"}
+            
+            # Test actuals data upload
+            file_data = {
+                "2024-01": {"total_patients": 1000, "new_starts": 200, "revenue": 500000},
+                "2024-02": {"total_patients": 1100, "new_starts": 180, "revenue": 550000},
+                "2024-03": {"total_patients": 1200, "new_starts": 160, "revenue": 600000}
+            }
+            
+            payload = {
+                "file_data": file_data,
+                "data_type": "actuals"
+            }
+            
+            response = await self.client.post(f"{API_BASE_URL}/forecasting/upload-client-data/{self.test_forecasting_model_id}", 
+                                            json=payload, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["status", "message", "model_id", "data_type", "updated_at"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("Forecasting Client Data Upload", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                if data.get("status") != "success":
+                    self.log_test_result("Forecasting Client Data Upload", False, 
+                                       f"Status not success: {data.get('status')}")
+                    return False
+                
+                if data.get("model_id") != self.test_forecasting_model_id:
+                    self.log_test_result("Forecasting Client Data Upload", False, 
+                                       f"Model ID mismatch: {data.get('model_id')}")
+                    return False
+                
+                if data.get("data_type") != "actuals":
+                    self.log_test_result("Forecasting Client Data Upload", False, 
+                                       f"Data type mismatch: {data.get('data_type')}")
+                    return False
+                
+                # Validate updated_at timestamp
+                updated_at_valid = False
+                try:
+                    from datetime import datetime
+                    updated_at = data.get("updated_at", "")
+                    if updated_at:
+                        datetime.fromisoformat(updated_at.replace('Z', '+00:00'))
+                        updated_at_valid = True
+                except:
+                    pass
+                
+                self.log_test_result("Forecasting Client Data Upload", True, 
+                                   f"Client data uploaded successfully. "
+                                   f"Model: {data.get('model_id')[:8]}..., "
+                                   f"Data type: {data.get('data_type')}, "
+                                   f"Updated at valid: {updated_at_valid}")
+                return True
+                
+            elif response.status_code == 401:
+                self.log_test_result("Forecasting Client Data Upload", False, 
+                                   "Authentication required for data upload")
+                return False
+            elif response.status_code == 404:
+                self.log_test_result("Forecasting Client Data Upload", False, 
+                                   "Model not found or access denied")
+                return False
+            else:
+                self.log_test_result("Forecasting Client Data Upload", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Forecasting Client Data Upload", False, f"Exception: {str(e)}")
+            return False
+    
+    async def test_forecasting_model_calibration(self) -> bool:
+        """Test model calibration with actual data"""
+        if not hasattr(self, 'test_session_token'):
+            self.log_test_result("Forecasting Model Calibration", False, "No session token available")
+            return False
+        
+        if not hasattr(self, 'test_forecasting_model_id'):
+            self.log_test_result("Forecasting Model Calibration", False, "No forecasting model ID available")
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.test_session_token}"}
+            response = await self.client.post(f"{API_BASE_URL}/forecasting/calibrate/{self.test_forecasting_model_id}", 
+                                            headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_fields = ["status", "calibration", "message"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    self.log_test_result("Forecasting Model Calibration", False, 
+                                       f"Missing required fields: {missing_fields}")
+                    return False
+                
+                if data.get("status") != "success":
+                    self.log_test_result("Forecasting Model Calibration", False, 
+                                       f"Status not success: {data.get('status')}")
+                    return False
+                
+                # Validate calibration results
+                calibration = data.get("calibration", {})
+                if not isinstance(calibration, dict):
+                    self.log_test_result("Forecasting Model Calibration", False, 
+                                       f"Calibration should be dict, got: {type(calibration)}")
+                    return False
+                
+                # Check for calibration metrics
+                expected_metrics = ["accuracy", "bias", "mape", "rmse"]
+                found_metrics = sum(1 for metric in expected_metrics if metric in calibration)
+                
+                # Check for calibration adjustments
+                has_adjustments = "adjustments" in calibration or "parameters" in calibration
+                
+                self.log_test_result("Forecasting Model Calibration", True, 
+                                   f"Model calibrated successfully. "
+                                   f"Metrics found: {found_metrics}/{len(expected_metrics)}, "
+                                   f"Has adjustments: {has_adjustments}, "
+                                   f"Message: {data.get('message')}")
+                return True
+                
+            elif response.status_code == 401:
+                self.log_test_result("Forecasting Model Calibration", False, 
+                                   "Authentication required for model calibration")
+                return False
+            elif response.status_code == 404:
+                self.log_test_result("Forecasting Model Calibration", False, 
+                                   "Model not found or access denied")
+                return False
+            else:
+                self.log_test_result("Forecasting Model Calibration", False, 
+                                   f"HTTP {response.status_code}: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test_result("Forecasting Model Calibration", False, f"Exception: {str(e)}")
+            return False
+    
     async def test_visualization_data(self) -> bool:
         """Test Plotly chart data generation"""
         if not self.analysis_id:
