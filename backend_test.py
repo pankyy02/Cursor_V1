@@ -3943,10 +3943,10 @@ async def main():
         results = await tester.run_all_tests()
         
         # Save results to file
-        with open('/app/backend_test_results.json', 'w') as f:
+        with open('./backend_test_results.json', 'w') as f:
             json.dump(results, f, indent=2, default=str)
         
-        print(f"\n📄 Detailed results saved to: /app/backend_test_results.json")
+        print(f"\n📄 Detailed results saved to: ./backend_test_results.json")
         
         # Return exit code based on results
         if results["success_rate"] >= 70:  # 70% pass rate threshold

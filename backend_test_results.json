@@ -1,37 +1,37 @@
 {
   "total_tests": 40,
-  "passed": 0,
-  "failed": 40,
-  "success_rate": 0.0,
+  "passed": 20,
+  "failed": 20,
+  "success_rate": 50.0,
   "results": {
-    "API Health Check": false,
-    "Database Connection": false,
-    "Existing Data Retrieval": false,
+    "API Health Check": true,
+    "Database Connection": true,
+    "Existing Data Retrieval": true,
     "Core Analysis Endpoint": false,
     "Funnel Generation": false,
     "Competitive Intelligence": false,
-    "Scenario Modeling": false,
-    "Clinical Trials Search": false,
+    "Scenario Modeling": true,
+    "Clinical Trials Search": true,
     "Export Functionality": false,
     "Data Persistence": false,
-    "Visualization Data": false,
-    "Perplexity Search Endpoint": false,
+    "Visualization Data": true,
+    "Perplexity Search Endpoint": true,
     "Perplexity Pharmaceutical Search": false,
     "Enhanced Competitive Analysis": false,
     "Perplexity Error Handling": false,
-    "Perplexity Data Storage": false,
-    "Real-World Evidence Analysis": false,
-    "Market Access Intelligence": false,
-    "Predictive Analytics": false,
-    "Phase 3 Dashboard": false,
-    "Phase 3 Data Retrieval Endpoints": false,
-    "Company Intelligence - Qinlock": false,
-    "Company Intelligence - Keytruda": false,
+    "Perplexity Data Storage": true,
+    "Real-World Evidence Analysis": true,
+    "Market Access Intelligence": true,
+    "Predictive Analytics": true,
+    "Phase 3 Dashboard": true,
+    "Phase 3 Data Retrieval Endpoints": true,
+    "Company Intelligence - Qinlock": true,
+    "Company Intelligence - Keytruda": true,
     "Company Intelligence - Competitive Discovery": false,
     "Company Intelligence - Investor Relations": false,
-    "Company Intelligence - Error Handling": false,
-    "Company Intelligence - Data Persistence": false,
-    "Company Intelligence - Timeout Handling": false,
+    "Company Intelligence - Error Handling": true,
+    "Company Intelligence - Data Persistence": true,
+    "Company Intelligence - Timeout Handling": true,
     "User Registration": false,
     "User Login": false,
     "User Profile": false,
@@ -41,251 +41,251 @@
     "Subscription Plans": false,
     "Stripe Checkout Session": false,
     "Stripe Checkout Status": false,
-    "Password Hashing Security": false,
+    "Password Hashing Security": true,
     "Session Management": false,
-    "Database Collections": false
+    "Database Collections": true
   },
   "test_details": {
     "API Health Check": {
-      "success": false,
-      "details": "Status code: 502",
-      "timestamp": "2025-07-19T18:56:48.653774",
+      "success": true,
+      "details": "API responding: Pharma Forecasting Consultant API v2.0",
+      "timestamp": "2025-07-24T15:46:53.084250",
       "response_data": null
     },
     "Database Connection": {
-      "success": false,
-      "details": "Status creation failed: 502",
-      "timestamp": "2025-07-19T18:56:48.662024",
+      "success": true,
+      "details": "MongoDB connection working, CRUD operations successful",
+      "timestamp": "2025-07-24T15:46:53.094940",
       "response_data": null
     },
     "Existing Data Retrieval": {
-      "success": false,
-      "details": "Failed to retrieve analyses: 502",
-      "timestamp": "2025-07-19T18:56:48.668555",
+      "success": true,
+      "details": "Found 2 existing analyses, Using ID: b6134964... (GIST)",
+      "timestamp": "2025-07-24T15:46:53.102387",
       "response_data": null
     },
     "Therapy Analysis": {
       "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.676058",
+      "details": "API key authentication required - endpoint structure validated",
+      "timestamp": "2025-07-24T15:46:53.632090",
       "response_data": null
     },
     "Funnel Generation": {
       "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T18:56:48.676093",
+      "details": "HTTP 500: {\"detail\":\"Funnel generation failed: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}}\"}",
+      "timestamp": "2025-07-24T15:46:54.037315",
       "response_data": null
     },
     "Competitive Analysis": {
       "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T18:56:48.676103",
+      "details": "Found 1 competitors, 0 real pharma companies, Market dynamics: True, Pipeline: True, Clinical trials: 0",
+      "timestamp": "2025-07-24T15:46:54.898783",
       "response_data": null
     },
     "Scenario Modeling": {
-      "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T18:56:48.676111",
+      "success": true,
+      "details": "3 scenarios generated, Peak revenues: Opt=540M, Real=900M, Pess=1620M, Logical ordering: False, Visualization: True",
+      "timestamp": "2025-07-24T15:46:55.341038",
       "response_data": null
     },
     "Clinical Trials Search": {
-      "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.686583",
+      "success": true,
+      "details": "Found 0 clinical trials",
+      "timestamp": "2025-07-24T15:46:55.815436",
       "response_data": null
     },
     "Export Functionality": {
       "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T18:56:48.686619",
+      "details": "PDF: False, Excel: False",
+      "timestamp": "2025-07-24T15:46:55.829337",
       "response_data": null
     },
     "Data Persistence": {
       "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T18:56:48.686629",
+      "details": "Therapy area mismatch",
+      "timestamp": "2025-07-24T15:46:55.836895",
       "response_data": null
     },
     "Visualization Data": {
-      "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T18:56:48.686637",
+      "success": true,
+      "details": "Generated charts: funnel, scenario, market",
+      "timestamp": "2025-07-24T15:46:55.846986",
       "response_data": null
     },
     "Perplexity Search Endpoint": {
-      "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.693705",
+      "success": true,
+      "details": "Search successful. Content length: 68, Citations: 0, Relevance score: 0/5",
+      "timestamp": "2025-07-24T15:46:56.618945",
       "response_data": null
     },
     "Perplexity Pharmaceutical Search": {
       "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.701888",
+      "details": "Pharmaceutical terms found: 0/5, Valid citations: 0/0, Content quality: Basic",
+      "timestamp": "2025-07-24T15:46:57.764092",
       "response_data": null
     },
     "Enhanced Competitive Analysis": {
       "success": false,
-      "details": "No analysis ID available",
-      "timestamp": "2025-07-19T18:56:48.701919",
+      "details": "Real-time intel: True, Enhanced analysis: True, Sources: 0, Analysis type: Error",
+      "timestamp": "2025-07-24T15:46:58.589488",
       "response_data": null
     },
     "Perplexity Error Handling": {
       "success": false,
-      "details": "Expected 500 error, got 502",
-      "timestamp": "2025-07-19T18:56:48.708266",
+      "details": "Expected 500 error, got 200",
+      "timestamp": "2025-07-24T15:46:59.023860",
       "response_data": null
     },
     "Perplexity Data Storage": {
-      "success": false,
-      "details": "Search failed: 502",
-      "timestamp": "2025-07-19T18:56:48.715302",
+      "success": true,
+      "details": "Storage fields present: True, Valid timestamp: True, Query: 'Test query for database storag...'",
+      "timestamp": "2025-07-24T15:47:00.078598",
       "response_data": null
     },
     "Real-World Evidence Analysis": {
-      "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.721694",
+      "success": true,
+      "details": "RWE analysis generated successfully. Evidence score: 0.00, Data sources: 4, Has effectiveness: True, Has safety: True, Has outcomes: True, Recommendations: 1, Limitations: 1",
+      "timestamp": "2025-07-24T15:47:00.562762",
       "response_data": null
     },
     "Market Access Intelligence": {
-      "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.730055",
+      "success": true,
+      "details": "Market access analysis generated successfully. Readiness score: 0.00, Has payer data: True, Has reimbursement: True, Has pricing: True, Access barriers: 0, Recommendations: 1",
+      "timestamp": "2025-07-24T15:47:02.346818",
       "response_data": null
     },
     "Predictive Analytics": {
-      "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.737067",
+      "success": true,
+      "details": "Predictive analytics generated successfully. Has market penetration: True, Has competitive modeling: True, Has revenue forecasts: True, Has scenarios: False, Has performance metrics: False, Assumptions: 1, Recommendations: 1",
+      "timestamp": "2025-07-24T15:47:02.802251",
       "response_data": null
     },
     "Phase 3 Dashboard": {
-      "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.743107",
+      "success": true,
+      "details": "Dashboard data retrieved successfully. RWE analyses: 5, Market access analyses: 5, Predictive analyses: 5, Total: 15, Capabilities: RWE=6, Market=6, Predictive=6",
+      "timestamp": "2025-07-24T15:47:02.844559",
       "response_data": null
     },
     "Phase 3 Data Retrieval Endpoints": {
-      "success": false,
-      "details": "RWE endpoint: 502, Market access endpoint: 502, Predictive endpoint: 502, RWE with product: 502, Data found: False",
-      "timestamp": "2025-07-19T18:56:48.771482",
+      "success": true,
+      "details": "RWE endpoint: 404, Market access endpoint: 404, Predictive endpoint: 404, RWE with product: 404, Data found: False",
+      "timestamp": "2025-07-24T15:47:02.860358",
       "response_data": null
     },
     "Company Intelligence - Qinlock": {
-      "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.777587",
+      "success": true,
+      "details": "Parent company: Unknown Company, Expected company identified: False, Market class: Unknown Class, Class identified: False, Competitors found: 1, Sources: 0",
+      "timestamp": "2025-07-24T15:47:05.927336",
       "response_data": null
     },
     "Company Intelligence - Keytruda": {
-      "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.784720",
+      "success": true,
+      "details": "Parent company: Unknown Company, Merck identified: False, Market class: Unknown Class, Class identified: False, Competitors: 1, Known competitors found: 0",
+      "timestamp": "2025-07-24T15:47:08.790605",
       "response_data": null
     },
     "Company Intelligence - Competitive Discovery": {
       "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.790374",
+      "details": "Total competitors: 1, Valid structure: 1, GIST-related: 0, Known GIST drugs: 0, Therapy area matches: 1",
+      "timestamp": "2025-07-24T15:47:11.921537",
       "response_data": null
     },
     "Company Intelligence - Investor Relations": {
       "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.796757",
+      "details": "Structure complete: True, Press releases: 0 (valid: 0), Financial highlights: 0, Sources accessed: 0, Presentations: 0, Financial metrics: True",
+      "timestamp": "2025-07-24T15:47:14.691884",
       "response_data": null
     },
     "Company Intelligence - Error Handling": {
-      "success": false,
-      "details": "Unexpected status code: 502",
-      "timestamp": "2025-07-19T18:56:48.803519",
+      "success": true,
+      "details": "Structure maintained: True, Fallback company: True, Fallback class: True, Investor error handling: False, Competitor error handling: False",
+      "timestamp": "2025-07-24T15:47:17.945346",
       "response_data": null
     },
     "Company Intelligence - Data Persistence": {
-      "success": false,
-      "details": "Storage failed: 502",
-      "timestamp": "2025-07-19T18:56:48.809486",
+      "success": true,
+      "details": "Storage and retrieval successful, Required fields: True, Product match: True, Valid timestamp: True",
+      "timestamp": "2025-07-24T15:47:21.116657",
       "response_data": null
     },
     "Company Intelligence - Timeout Handling": {
-      "success": false,
-      "details": "Unexpected status: 502, Time: 0.01s",
-      "timestamp": "2025-07-19T18:56:48.815129",
+      "success": true,
+      "details": "Response time: 2.63s, Reasonable time: True, Basic structure: True, Timeout handling: True",
+      "timestamp": "2025-07-24T15:47:23.742727",
       "response_data": null
     },
     "User Registration": {
       "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.820619",
+      "details": "Bad request: {\"detail\":\"Email already registered\"}",
+      "timestamp": "2025-07-24T15:47:23.762202",
       "response_data": null
     },
     "User Login": {
       "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.828254",
+      "details": "Missing required fields: ['session_token', 'expires_at']",
+      "timestamp": "2025-07-24T15:47:23.771136",
       "response_data": null
     },
     "User Profile": {
       "success": false,
       "details": "No session token available",
-      "timestamp": "2025-07-19T18:56:48.828291",
+      "timestamp": "2025-07-24T15:47:23.771235",
       "response_data": null
     },
     "User Logout": {
       "success": false,
       "details": "No session token available",
-      "timestamp": "2025-07-19T18:56:48.828301",
+      "timestamp": "2025-07-24T15:47:23.771260",
       "response_data": null
     },
     "Google OAuth Token": {
       "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.833781",
+      "details": "Invalid Google token - OAuth validation working",
+      "timestamp": "2025-07-24T15:47:23.950551",
       "response_data": null
     },
     "Apple OAuth Token": {
       "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.839681",
+      "details": "Invalid Apple ID token - OAuth validation working",
+      "timestamp": "2025-07-24T15:47:23.954425",
       "response_data": null
     },
     "Subscription Plans": {
       "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.845598",
+      "details": "Expected list, got: <class 'dict'>",
+      "timestamp": "2025-07-24T15:47:23.957929",
       "response_data": null
     },
     "Stripe Checkout Session": {
       "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.852286",
+      "details": "Server error: {\"detail\":\"Failed to create checkout session\"}",
+      "timestamp": "2025-07-24T15:47:23.960843",
       "response_data": null
     },
     "Stripe Checkout Status": {
       "success": false,
-      "details": "HTTP 502: ",
-      "timestamp": "2025-07-19T18:56:48.858508",
+      "details": "Server error: {\"detail\":\"Failed to get checkout status\"}",
+      "timestamp": "2025-07-24T15:47:24.307594",
       "response_data": null
     },
     "Password Hashing Security": {
-      "success": false,
-      "details": "Registration attempts: 0/2, Correct login: False, Wrong password rejected: False, Unique tokens: True",
-      "timestamp": "2025-07-19T18:56:48.883159",
+      "success": true,
+      "details": "Registration attempts: 2/2, Correct login: True, Wrong password rejected: True, Unique tokens: True",
+      "timestamp": "2025-07-24T15:47:24.338573",
       "response_data": null
     },
     "Session Management": {
       "success": false,
       "details": "Invalid token rejected: False, Malformed token rejected: False, No token rejected: False, Empty token rejected: False",
-      "timestamp": "2025-07-19T18:56:48.909394",
+      "timestamp": "2025-07-24T15:47:24.351442",
       "response_data": null
     },
     "Database Collections": {
-      "success": false,
-      "details": "User registration: False, Session creation: False, Profile access: True, Payment transaction: False",
-      "timestamp": "2025-07-19T18:56:48.927816",
+      "success": true,
+      "details": "User registration: True, Session creation: True, Profile access: False, Payment transaction: True",
+      "timestamp": "2025-07-24T15:47:24.455056",
       "response_data": null
     }
   },
-  "analysis_id": null
+  "analysis_id": "b6134964-0654-4217-aabb-50ffb84e1ced"
 }

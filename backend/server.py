@@ -17,7 +17,7 @@ import asyncio
 import httpx
 import json
 import base64
-from io import BytesIO
+from anthropic import AsyncAnthropic
 import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
@@ -34,7 +34,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 
 # Phase 4: Stripe Integration
-from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+import stripe
 
 # Phase 4: OAuth Integration
 from authlib.integrations.starlette_client import OAuth
@@ -2133,13 +2133,7 @@ def create_monte_carlo_chart(monte_carlo_data: Dict) -> str:
 async def analyze_with_claude(therapy_area: str, product_name: str, analysis_type: str, claude_key: str) -> Dict[str, Any]:
     """Comprehensive analysis using Claude"""
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
-        chat = LlmChat(
-            api_key=claude_key,
-            session_id=f"ensemble_claude_{uuid.uuid4()}",
-            system_message=f"You are a world-class pharmaceutical analyst specializing in {analysis_type} analysis. Provide structured, quantitative insights with high confidence assessments."
-        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(4096)
+        client = AsyncAnthropic(api_key=claude_key)
         
         if analysis_type == "comprehensive":
             prompt = f"""
@@ -2184,7 +2178,12 @@ async def analyze_with_claude(therapy_area: str, product_name: str, analysis_typ
             Provide specific numerical forecasts with confidence intervals.
             """
         
-        response = await chat.send_message(UserMessage(text=prompt))
+        response_obj = await client.messages.create(
+            model="claude-sonnet-4-20250514",  # or your preferred model
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response = response_obj.content[0].text if response_obj.content else ""
         
         # Extract confidence scores from response
         import re
@@ -2303,13 +2302,11 @@ async def analyze_with_perplexity(therapy_area: str, product_name: str, analysis
 async def analyze_with_gemini(therapy_area: str, product_name: str, analysis_type: str, gemini_key: str) -> Dict[str, Any]:
     """Optional Gemini analysis for ensemble"""
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        import google.generativeai as genai
         
-        chat = LlmChat(
-            api_key=gemini_key,
-            session_id=f"ensemble_gemini_{uuid.uuid4()}",
-            system_message=f"You are a pharmaceutical market analyst. Provide {analysis_type} analysis with numerical insights and confidence assessments."
-        ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(3072)
+        genai.configure(api_key=gemini_key)
+        
+        model = genai.GenerativeModel('gemini-pro')
         
         prompt = f"""
         Pharmaceutical {analysis_type} analysis for {therapy_area}{f' - {product_name}' if product_name else ''}:
@@ -2325,21 +2322,21 @@ async def analyze_with_gemini(therapy_area: str, product_name: str, analysis_typ
         Provide specific numbers and quantitative insights where possible.
         """
         
-        response = await chat.send_message(UserMessage(text=prompt))
+        response = model.generate_content(prompt)
         
         # Simple confidence extraction for Gemini
         confidence_score = 0.7  # Default for Gemini
-        if any(word in response.lower() for word in ['confident', 'certain', 'definitive']):
+        if any(word in response.text.lower() for word in ['confident', 'certain', 'definitive']):
             confidence_score = 0.85
-        elif any(word in response.lower() for word in ['uncertain', 'limited', 'unclear']):
+        elif any(word in response.text.lower() for word in ['uncertain', 'limited', 'unclear']):
             confidence_score = 0.55
             
         return {
-            "analysis": response,
+            "analysis": response.text,
             "confidence_score": confidence_score,
-            "model": "gemini-2.0-flash",
+            "model": "gemini-pro",
             "analysis_type": analysis_type,
-            "word_count": len(response.split()),
+            "word_count": len(response.text.split()),
             "timestamp": datetime.utcnow().isoformat(),
             "error": None
         }
@@ -2348,7 +2345,7 @@ async def analyze_with_gemini(therapy_area: str, product_name: str, analysis_typ
         return {
             "analysis": f"Gemini analysis failed: {str(e)}",
             "confidence_score": 0.0,
-            "model": "gemini-2.0-flash", 
+            "model": "gemini-pro", 
             "analysis_type": analysis_type,
             "error": str(e),
             "timestamp": datetime.utcnow().isoformat()
@@ -2410,14 +2407,14 @@ async def synthesize_ensemble_analysis(claude_result: Dict, perplexity_result: D
         best_model_idx = confidences.index(max(confidences))
         if best_model_idx == 0 and claude_result.get("error") is None:
             # Use Claude for synthesis
-            from emergentintegrations.llm.chat import LlmChat, UserMessage
-            chat = LlmChat(
-                api_key="temp",  # Would need to be passed
-                session_id=f"synthesis_{uuid.uuid4()}",
-                system_message="You are an expert at synthesizing multiple AI analyses into coherent insights."
-            ).with_model("anthropic", "claude-sonnet-4-20250514")
+            client = AsyncAnthropic(api_key="temp")  # Would need to be passed
             
-            synthesis = f"Multi-model ensemble analysis combining insights from {', '.join(models_used)} with agreement score: {model_agreement_score:.2f}"
+            response_obj = await client.messages.create(
+                model="claude-sonnet-4-20250514",  # or your preferred model
+                max_tokens=4096,
+                messages=[{"role": "user", "content": synthesis_prompt}]
+            )
+            synthesis = response_obj.content[0].text if response_obj.content else ""
         else:
             synthesis = f"Ensemble analysis from {len(models_used)} models with weighted confidence: {model_agreement_score:.2f}"
         
@@ -3062,13 +3059,7 @@ async def enhanced_competitive_analysis_with_perplexity(therapy_area: str, produ
         perplexity_result = await search_with_perplexity(market_query, perplexity_key, "competitive_intelligence")
         
         # Then enhance with Claude's analytical capabilities
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
-        chat = LlmChat(
-            api_key=claude_key,
-            session_id=f"enhanced_competitive_{uuid.uuid4()}",
-            system_message="You are a pharmaceutical competitive intelligence expert. Analyze the provided real-time market data and enhance it with structured competitive analysis."
-        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(3072)
+        client = AsyncAnthropic(api_key=claude_key)
         
         analysis_prompt = f"""
         Based on the following real-time market intelligence data, provide a comprehensive competitive analysis:
@@ -3091,7 +3082,12 @@ async def enhanced_competitive_analysis_with_perplexity(therapy_area: str, produ
         Provide specific company names, drug names, and quantitative data from the real-time sources.
         """
         
-        claude_response = await chat.send_message(UserMessage(text=analysis_prompt))
+        response_obj = await client.messages.create(
+            model="claude-sonnet-4-20250514",  # or your preferred model
+            max_tokens=4096,
+            messages=[{"role": "user", "content": analysis_prompt}]
+        )
+        claude_response = response_obj.content[0].text if response_obj.content else ""
         
         # Combine both analyses
         return {
@@ -3141,13 +3137,7 @@ async def search_clinical_trials(therapy_area: str):
 async def search_regulatory_intelligence(therapy_area: str, api_key: str):
     """Generate regulatory intelligence using Claude"""
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"regulatory_{uuid.uuid4()}",
-            system_message="You are a regulatory affairs expert specializing in pharmaceutical approvals and market access."
-        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(2048)
+        client = AsyncAnthropic(api_key=api_key)
         
         prompt = f"""
         Provide comprehensive regulatory intelligence for {therapy_area} including:
@@ -3161,7 +3151,12 @@ async def search_regulatory_intelligence(therapy_area: str, api_key: str):
         Structure as JSON with these sections: pathways, recent_activity, trends, timelines, market_access
         """
         
-        response = await chat.send_message(UserMessage(text=prompt))
+        response_obj = await client.messages.create(
+            model="claude-sonnet-4-20250514",  # or your preferred model
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response = response_obj.content[0].text if response_obj.content else ""
         
         # Try to parse as JSON, fallback to structured text
         try:
@@ -3181,13 +3176,7 @@ async def search_regulatory_intelligence(therapy_area: str, api_key: str):
 async def generate_competitive_analysis(therapy_area: str, api_key: str):
     """Generate competitive landscape analysis using Claude"""
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"competitive_{uuid.uuid4()}",
-            system_message="You are a pharmaceutical competitive intelligence analyst with expertise in market dynamics and competitive positioning."
-        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(3072)
+        client = AsyncAnthropic(api_key=api_key)
         
         prompt = f"""
         Conduct a comprehensive competitive analysis for {therapy_area} therapy area. 
@@ -3213,7 +3202,12 @@ async def generate_competitive_analysis(therapy_area: str, api_key: str):
         Focus on providing actionable competitive intelligence.
         """
         
-        response = await chat.send_message(UserMessage(text=prompt))
+        response_obj = await client.messages.create(
+            model="claude-sonnet-4-20250514",  # or your preferred model
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response = response_obj.content[0].text if response_obj.content else ""
         
         # Try to extract structured information from the response
         lines = response.split('\n')
@@ -3337,19 +3331,13 @@ async def generate_competitive_analysis(therapy_area: str, api_key: str):
 async def generate_risk_assessment(therapy_area: str, analysis_data: dict, api_key: str):
     """Generate comprehensive risk assessment"""
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"risk_{uuid.uuid4()}",
-            system_message="You are a pharmaceutical risk assessment expert specializing in clinical, regulatory, and commercial risk analysis."
-        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(2048)
+        client = AsyncAnthropic(api_key=api_key)
         
         prompt = f"""
         Based on the therapy area analysis for {therapy_area}, assess key risks across:
         
         1. Clinical Risks (efficacy, safety, trial design, endpoints)
-        2. Regulatory Risks (approval pathways, requirements, precedents)  
+        2. Regulatory Risks (approval pathways, requirements, precedents)
         3. Commercial Risks (competition, market access, pricing pressure)
         4. Operational Risks (manufacturing, supply chain, partnerships)
         5. Market Risks (market size, adoption, reimbursement)
@@ -3358,7 +3346,12 @@ async def generate_risk_assessment(therapy_area: str, analysis_data: dict, api_k
         Structure as JSON with risk categories and overall risk score (1-10)
         """
         
-        response = await chat.send_message(UserMessage(text=prompt))
+        response_obj = await client.messages.create(
+            model="claude-sonnet-4-20250514",  # or your preferred model
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response = response_obj.content[0].text if response_obj.content else ""
         
         try:
             return json.loads(response)
@@ -3379,13 +3372,7 @@ async def generate_risk_assessment(therapy_area: str, analysis_data: dict, api_k
 async def generate_scenario_models(therapy_area: str, analysis_data: dict, scenarios: List[str], api_key: str):
     """Generate multi-scenario forecasting models"""
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"scenarios_{uuid.uuid4()}",
-            system_message="You are a pharmaceutical forecasting expert specializing in scenario modeling and market projections."
-        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(3072)
+        client = AsyncAnthropic(api_key=api_key)
         
         product_name = analysis_data.get('product_name', '')
         product_context = f" for {product_name}" if product_name else ""
@@ -3417,7 +3404,12 @@ async def generate_scenario_models(therapy_area: str, analysis_data: dict, scena
         Provide specific numbers - not ranges. Make projections realistic for {therapy_area}.
         """
         
-        response = await chat.send_message(UserMessage(text=prompt))
+        response_obj = await client.messages.create(
+            model="claude-sonnet-4-20250514",  # or your preferred model
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response = response_obj.content[0].text if response_obj.content else ""
         
         # Parse the response to extract scenario data
         scenarios_data = {}
@@ -4012,13 +4004,7 @@ async def enhanced_competitive_intel(request: CompetitiveAnalysisRequest):
 async def generate_real_world_evidence(therapy_area: str, product_name: str, analysis_type: str, data_sources: List[str], api_key: str) -> RealWorldEvidence:
     """Generate comprehensive Real-World Evidence analysis"""
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"rwe_{uuid.uuid4()}",
-            system_message="You are a pharmaceutical real-world evidence expert specializing in effectiveness studies, safety monitoring, and health economics."
-        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(4096)
+        client = AsyncAnthropic(api_key=api_key)
         
         # Create data source specific prompts
         data_source_descriptions = {
@@ -4094,7 +4080,12 @@ async def generate_real_world_evidence(therapy_area: str, product_name: str, ana
         Rate the overall evidence quality on a scale of 0-1.
         """
         
-        response = await chat.send_message(UserMessage(text=prompt))
+        response_obj = await client.messages.create(
+            model="claude-sonnet-4-20250514",  # or your preferred model
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response = response_obj.content[0].text if response_obj.content else ""
         
         # Parse response into structured data
         effectiveness_data = extract_section_data(response, "EFFECTIVENESS")
@@ -4161,13 +4152,7 @@ async def generate_market_access_intelligence(therapy_area: str, product_name: s
         # Combine Perplexity intelligence
         real_time_data = "\n\n".join([result.content for result in perplexity_results])
         
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"market_access_{uuid.uuid4()}",
-            system_message="You are a pharmaceutical market access expert specializing in reimbursement, pricing, and payer strategies."
-        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(4096)
+        client = AsyncAnthropic(api_key=api_key)
         
         markets_text = ", ".join(target_markets)
         product_context = f" for {product_name}" if product_name else ""
@@ -4251,7 +4236,12 @@ async def generate_market_access_intelligence(therapy_area: str, product_name: s
         Provide specific metrics, timelines, and actionable insights. Calculate a market readiness score (0-1).
         """
         
-        response = await chat.send_message(UserMessage(text=prompt))
+        response_obj = await client.messages.create(
+            model="claude-sonnet-4-20250514",  # or your preferred model
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response = response_obj.content[0].text if response_obj.content else ""
         
         # Parse response into structured data
         payer_landscape = extract_section_data(response, "PAYER LANDSCAPE")
@@ -4311,13 +4301,7 @@ async def generate_market_access_intelligence(therapy_area: str, product_name: s
 async def generate_predictive_analytics(therapy_area: str, product_name: str, forecast_horizon: int, model_type: str, include_rwe: bool, api_key: str) -> PredictiveAnalytics:
     """Generate advanced Predictive Analytics with ML-enhanced forecasting"""
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"predictive_{uuid.uuid4()}",
-            system_message="You are a pharmaceutical forecasting expert specializing in predictive analytics, machine learning models, and advanced market modeling."
-        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(4096)
+        client = AsyncAnthropic(api_key=api_key)
         
         product_context = f" for {product_name}" if product_name else ""
         rwe_context = " incorporating real-world evidence" if include_rwe else ""
@@ -4400,7 +4384,12 @@ async def generate_predictive_analytics(therapy_area: str, product_name: str, fo
         Provide specific numbers, percentages, and quantitative projections. Include confidence levels and uncertainty ranges.
         """
         
-        response = await chat.send_message(UserMessage(text=prompt))
+        response_obj = await client.messages.create(
+            model="claude-sonnet-4-20250514",  # or your preferred model
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response = response_obj.content[0].text if response_obj.content else ""
         
         # Parse response into structured data
         market_penetration_forecast = extract_forecast_data(response, "MARKET PENETRATION")
@@ -4833,16 +4822,7 @@ async def get_status_checks():
 @api_router.post("/analyze-therapy", response_model=TherapyAreaAnalysis)
 async def analyze_therapy_area(request: TherapyAreaRequest):
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
-        # Basic analysis using Claude
-        chat = LlmChat(
-            api_key=request.api_key,
-            session_id=f"therapy_analysis_{uuid.uuid4()}",
-            system_message="""You are a world-class pharmaceutical consultant specializing in therapy area analysis and forecasting. 
-            You have deep expertise in disease pathology, treatment algorithms, biomarkers, and patient journey mapping.
-            Provide comprehensive, accurate, and structured analysis suitable for pharmaceutical forecasting models."""
-        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(4096)
+        client = AsyncAnthropic(api_key=request.api_key)
         
         product_info = f" for the product '{request.product_name}'" if request.product_name else ""
         prompt = f"""
@@ -4868,8 +4848,12 @@ async def analyze_therapy_area(request: TherapyAreaRequest):
         Focus on current medical standards and include relevant clinical data where appropriate.
         """
         
-        user_message = UserMessage(text=prompt)
-        response = await chat.send_message(user_message)
+        response_obj = await client.messages.create(
+            model="claude-sonnet-4-20250514",  # or your preferred model
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response = response_obj.content[0].text if response_obj.content else ""
         
         # Parse the response into structured sections
         sections = response.split("## ")
@@ -4931,14 +4915,7 @@ async def generate_patient_flow_funnel(request: PatientFlowFunnelRequest):
         if not analysis:
             raise HTTPException(status_code=404, detail="Analysis not found")
         
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
-        chat = LlmChat(
-            api_key=request.api_key,
-            session_id=f"funnel_generation_{uuid.uuid4()}",
-            system_message="""You are a pharmaceutical forecasting expert specializing in patient flow modeling and market analysis.
-            Create detailed patient flow funnels suitable for pharmaceutical forecasting models based on therapy area analysis."""
-        ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(4096)
+        client = AsyncAnthropic(api_key=request.api_key)
         
         prompt = f"""
         Based on the following therapy area analysis for {request.therapy_area}, create a comprehensive patient flow funnel suitable for pharmaceutical forecasting:
@@ -4996,8 +4973,12 @@ async def generate_patient_flow_funnel(request: PatientFlowFunnelRequest):
         Fill in realistic percentages and detailed descriptions based on current medical literature and market data for {request.therapy_area}.
         """
         
-        user_message = UserMessage(text=prompt)
-        response = await chat.send_message(user_message)
+        response_obj = await client.messages.create(
+            model="claude-sonnet-4-20250514",  # or your preferred model
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        response = response_obj.content[0].text if response_obj.content else ""
         
         # Parse JSON response
         import json
@@ -6371,15 +6352,14 @@ async def create_checkout_session(request: Request):
         plan = SUBSCRIPTION_PLANS[package_id]
         
         # Initialize Stripe checkout
-        webhook_url = f"{origin_url}/api/webhook/stripe"
-        stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url=webhook_url)
+        stripe.api_key = stripe_api_key
         
         # Build success and cancel URLs
         success_url = f"{origin_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
         cancel_url = f"{origin_url}/payment/cancelled"
         
         # Create checkout session request
-        checkout_request = CheckoutSessionRequest(
+        session = stripe.checkout.Session.create(
             amount=plan["price"],
             currency="usd",
             success_url=success_url,
@@ -6391,13 +6371,10 @@ async def create_checkout_session(request: Request):
             }
         )
         
-        # Create checkout session
-        session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_request)
-        
         # Store payment transaction
         payment_transaction = PaymentTransaction(
-            session_id=session.session_id,  # Add this field
-            stripe_session_id=session.session_id,
+            session_id=session.id,
+            stripe_session_id=session.id,
             amount=plan["price"],
             currency="usd",
             subscription_tier=package_id,
@@ -6412,11 +6389,12 @@ async def create_checkout_session(request: Request):
         
         return {
             "url": session.url,
-            "session_id": session.session_id
+            "session_id": session.id
         }
         
-    except HTTPException:
-        raise
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create checkout session")
     except Exception as e:
         logger.error(f"Create checkout session error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create checkout session")
@@ -6426,10 +6404,10 @@ async def get_checkout_status(session_id: str):
     """Get checkout session status"""
     try:
         # Initialize Stripe checkout
-        stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url="")
+        stripe.api_key = stripe_api_key
         
         # Get checkout status
-        checkout_status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
+        session = stripe.checkout.Session.retrieve(session_id)
         
         # Find payment transaction
         payment = await db.payment_transactions.find_one({"stripe_session_id": session_id})
@@ -6437,19 +6415,19 @@ async def get_checkout_status(session_id: str):
             raise HTTPException(status_code=404, detail="Payment transaction not found")
         
         # Update payment status if changed
-        if payment["stripe_payment_status"] != checkout_status.payment_status:
+        if payment["stripe_payment_status"] != session.payment_status:
             await db.payment_transactions.update_one(
                 {"stripe_session_id": session_id},
                 {
                     "$set": {
-                        "stripe_payment_status": checkout_status.payment_status,
-                        "payment_status": "completed" if checkout_status.payment_status == "paid" else "pending"
+                        "stripe_payment_status": session.payment_status,
+                        "payment_status": "completed" if session.payment_status == "paid" else "pending"
                     }
                 }
             )
             
             # If payment completed, upgrade user subscription
-            if checkout_status.payment_status == "paid" and payment["payment_status"] != "completed":
+            if session.payment_status == "paid" and payment["payment_status"] != "completed":
                 package_id = payment["metadata"].get("package_id")
                 if package_id:
                     # Find user and update subscription (placeholder - would need user context)
@@ -6460,15 +6438,16 @@ async def get_checkout_status(session_id: str):
                     )
         
         return {
-            "status": checkout_status.status,
-            "payment_status": checkout_status.payment_status,
-            "amount_total": checkout_status.amount_total,
-            "currency": checkout_status.currency,
-            "metadata": checkout_status.metadata
+            "status": session.status,
+            "payment_status": session.payment_status,
+            "amount_total": session.amount_total,
+            "currency": session.currency,
+            "metadata": session.metadata
         }
         
-    except HTTPException:
-        raise
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get checkout status")
     except Exception as e:
         logger.error(f"Get checkout status error: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get checkout status")
@@ -6481,19 +6460,21 @@ async def stripe_webhook(request: Request):
         stripe_signature = request.headers.get("stripe-signature")
         
         # Initialize Stripe checkout
-        stripe_checkout = StripeCheckout(api_key=stripe_api_key, webhook_url="")
+        stripe.api_key = stripe_api_key
         
         # Handle webhook
-        webhook_response = await stripe_checkout.handle_webhook(body, stripe_signature)
+        event = stripe.Webhook.construct_event(
+            body, stripe_signature, stripe_webhook_secret
+        )
         
-        if webhook_response.event_type == "checkout.session.completed":
+        if event.type == "checkout.session.completed":
             # Update payment transaction
             await db.payment_transactions.update_one(
-                {"stripe_session_id": webhook_response.session_id},
+                {"stripe_session_id": event.data.object.id},
                 {
                     "$set": {
                         "payment_status": "completed",
-                        "stripe_payment_status": webhook_response.payment_status,
+                        "stripe_payment_status": event.data.object.payment_status,
                         "completed_at": datetime.utcnow()
                     }
                 }
@@ -6501,6 +6482,9 @@ async def stripe_webhook(request: Request):
         
         return {"received": True}
         
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Webhook processing failed")
     except Exception as e:
         logger.error(f"Stripe webhook error: {str(e)}")
         raise HTTPException(status_code=500, detail="Webhook processing failed")
